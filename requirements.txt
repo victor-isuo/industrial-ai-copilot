@@ -1,0 +1,13 @@
+langchain
+langchain-google-genai
+langchain-community
+chromadb
+fastapi
+uvicorn
+python-dotenv
+pypdf
+sentence-transformers
+rank-bm25
+cohere
+pydantic
+pytest
