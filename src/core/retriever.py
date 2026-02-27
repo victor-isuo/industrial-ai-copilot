@@ -32,6 +32,10 @@ class HybridRetriever:
         
         return combined[:max(10, len(vector_docs))]  # Return up to 10 results
 
+    def invoke(self, query: str) -> List[Document]:
+        """Compatibility wrapper: allow calling `.invoke(query)` like other retrievers."""
+        return self.get_relevant_documents(query)
+
 
 def create_hybrid_retriever(
     vector_store: Chroma,
