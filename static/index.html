@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Industrial AI Copilot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0e14;
+            --panel: #111820;
+            --border: #1e2d3d;
+            --accent: #e87c34;
+            --accent2: #4fc3f7;
+            --text: #cdd6e0;
+            --text-dim: #4a6072;
+            --success: #43d98c;
+            --warning: #f0c040;
+            --danger: #e05c5c;
+            --mono: 'Share Tech Mono', monospace;
+            --sans: 'Barlow', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--sans);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Grid background */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(78,195,247,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(78,195,247,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        header {
+            margin-bottom: 48px;
+            animation: fadeDown 0.6s ease both;
+        }
+
+        .header-tag {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--accent);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        h1 {
+            font-size: clamp(28px, 5vw, 42px);
+            font-weight: 700;
+            color: #fff;
+            line-height: 1.1;
+            margin-bottom: 8px;
+        }
+
+        h1 span {
+            color: var(--accent);
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: var(--text-dim);
+            font-weight: 300;
+            letter-spacing: 0.5px;
+        }
+
+        /* Status bar */
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            padding: 12px 16px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--success);
+            margin-bottom: 32px;
+            font-family: var(--mono);
+            font-size: 12px;
+            animation: fadeDown 0.6s 0.1s ease both;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        .status-text { color: var(--success); }
+        .status-meta { color: var(--text-dim); margin-left: auto; }
+
+        /* Documents indexed */
+        .docs-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 32px;
+            animation: fadeDown 0.6s 0.2s ease both;
+        }
+
+        .doc-chip {
+            font-family: var(--mono);
+            font-size: 11px;
+            padding: 4px 10px;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            background: var(--panel);
+        }
+
+        .doc-chip.active { border-color: var(--accent2); color: var(--accent2); }
+
+        /* Query panel */
+        .query-panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 24px;
+            margin-bottom: 24px;
+            animation: fadeDown 0.6s 0.3s ease both;
+        }
+
+        .panel-label {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--accent);
+            letter-spacing: 2px;
+            margin-bottom: 16px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        textarea {
+            flex: 1;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-family: var(--sans);
+            font-size: 15px;
+            padding: 14px 16px;
+            resize: none;
+            height: 80px;
+            outline: none;
+            transition: border-color 0.2s;
+            line-height: 1.5;
+        }
+
+        textarea:focus { border-color: var(--accent2); }
+        textarea::placeholder { color: var(--text-dim); }
+
+        button {
+            background: var(--accent);
+            color: #000;
+            border: none;
+            padding: 0 28px;
+            font-family: var(--mono);
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+            align-self: stretch;
+        }
+
+        button:hover { background: #ff9d52; transform: translateY(-1px); }
+        button:active { transform: translateY(0); }
+        button:disabled { background: var(--text-dim); cursor: not-allowed; transform: none; }
+
+        /* Example queries */
+        .examples {
+            margin-top: 12px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .example-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-family: var(--mono);
+            font-size: 11px;
+            padding: 4px 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0;
+        }
+
+        .example-btn:hover {
+            border-color: var(--accent2);
+            color: var(--accent2);
+            transform: none;
+            background: transparent;
+        }
+
+        /* Response panel */
+        .response-panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 24px;
+            display: none;
+            animation: fadeUp 0.4s ease both;
+        }
+
+        .response-panel.visible { display: block; }
+
+        .response-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .confidence-badge {
+            font-family: var(--mono);
+            font-size: 11px;
+            padding: 4px 12px;
+            letter-spacing: 1px;
+        }
+
+        .confidence-badge.High { background: rgba(67,217,140,0.15); color: var(--success); border: 1px solid var(--success); }
+        .confidence-badge.Medium { background: rgba(240,192,64,0.15); color: var(--warning); border: 1px solid var(--warning); }
+        .confidence-badge.Low { background: rgba(224,92,92,0.15); color: var(--danger); border: 1px solid var(--danger); }
+
+        .processing-time {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-dim);
+        }
+
+        .answer-text {
+            font-size: 15px;
+            line-height: 1.8;
+            color: var(--text);
+            margin-bottom: 24px;
+            white-space: pre-wrap;
+        }
+
+        .sources-section { margin-bottom: 16px; }
+
+        .sources-label {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--accent);
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+
+        .source-item {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--text-dim);
+            padding: 6px 10px;
+            border-left: 2px solid var(--accent2);
+            margin-bottom: 4px;
+            background: rgba(79,195,247,0.04);
+        }
+
+        .caveat-box {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--warning);
+            padding: 10px 14px;
+            border: 1px solid rgba(240,192,64,0.3);
+            background: rgba(240,192,64,0.05);
+        }
+
+        /* Loading state */
+        .loading {
+            display: none;
+            align-items: center;
+            gap: 12px;
+            padding: 24px;
+            font-family: var(--mono);
+            font-size: 13px;
+            color: var(--accent2);
+        }
+
+        .loading.visible { display: flex; }
+
+        .loader {
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent2);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        /* Error state */
+        .error-box {
+            display: none;
+            padding: 16px;
+            border: 1px solid var(--danger);
+            background: rgba(224,92,92,0.08);
+            color: var(--danger);
+            font-family: var(--mono);
+            font-size: 13px;
+        }
+
+        .error-box.visible { display: block; }
+
+        /* Animations */
+        @keyframes fadeDown {
+            from { opacity: 0; transform: translateY(-12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-tag">// Industrial AI Copilot v1.0</div>
+            <h1>Engineering <span>Knowledge</span><br>At Your Command</h1>
+            <p class="subtitle">RAG-powered assistant for industrial documentation — manuals, safety standards, maintenance guides</p>
+        </header>
+
+        <div class="status-bar">
+            <div class="status-dot"></div>
+            <span class="status-text">SYSTEM OPERATIONAL</span>
+            <span class="status-meta" id="docCount">Loading documents...</span>
+        </div>
+
+        <div class="docs-row" id="docsRow"></div>
+
+        <div class="query-panel">
+            <div class="panel-label">// QUERY INPUT</div>
+            <div class="input-row">
+                <textarea 
+                    id="questionInput" 
+                    placeholder="Ask anything about your industrial documentation..."
+                    onkeydown="handleKey(event)"
+                ></textarea>
+                <button id="submitBtn" onclick="submitQuery()">EXECUTE</button>
+            </div>
+            <div class="examples">
+                <span style="font-family:var(--mono);font-size:11px;color:var(--text-dim);align-self:center;">TRY:</span>
+                <button class="example-btn" onclick="setQuery(this.textContent)">Gear pump loses suction?</button>
+                <button class="example-btn" onclick="setQuery(this.textContent)">ISO 9001:2000 requirements?</button>
+                <button class="example-btn" onclick="setQuery(this.textContent)">PPE for petroleum handling?</button>
+                <button class="example-btn" onclick="setQuery(this.textContent)">Preventive maintenance intervals?</button>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="loader"></div>
+            <span>Processing query through retrieval pipeline...</span>
+        </div>
+
+        <div class="error-box" id="errorBox"></div>
+
+        <div class="response-panel" id="responsePanel">
+            <div class="response-header">
+                <div class="panel-label">// RESPONSE</div>
+                <div style="display:flex;gap:12px;align-items:center;">
+                    <span class="processing-time" id="procTime"></span>
+                    <span class="confidence-badge" id="confidenceBadge"></span>
+                </div>
+            </div>
+            <div class="answer-text" id="answerText"></div>
+            <div class="sources-section">
+                <div class="sources-label">// SOURCES</div>
+                <div id="sourcesList"></div>
+            </div>
+            <div class="caveat-box" id="caveatBox" style="display:none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API = 'http://127.0.0.1:8000';
+
+        // Load documents on startup
+        async function loadDocs() {
+            try {
+                const res = await fetch(`${API}/documents`);
+                const data = await res.json();
+                document.getElementById('docCount').textContent = 
+                    `${data.total} DOCUMENTS INDEXED`;
+                const row = document.getElementById('docsRow');
+                data.indexed_documents.forEach((doc, i) => {
+                    const chip = document.createElement('div');
+                    chip.className = 'doc-chip active';
+                    chip.textContent = doc;
+                    row.appendChild(chip);
+                });
+            } catch(e) {
+                document.getElementById('docCount').textContent = 'API CONNECTING...';
+            }
+        }
+
+        function setQuery(text) {
+            document.getElementById('questionInput').value = text;
+            document.getElementById('questionInput').focus();
+        }
+
+        function handleKey(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                submitQuery();
+            }
+        }
+
+        async function submitQuery() {
+            const question = document.getElementById('questionInput').value.trim();
+            if (!question) return;
+
+            // UI state: loading
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('loading').classList.add('visible');
+            document.getElementById('responsePanel').classList.remove('visible');
+            document.getElementById('errorBox').classList.remove('visible');
+
+            try {
+                const res = await fetch(`${API}/query`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question })
+                });
+
+                if (!res.ok) throw new Error(`API error: ${res.status}`);
+                const data = await res.json();
+
+                // Populate response
+                document.getElementById('answerText').textContent = data.answer;
+
+                const badge = document.getElementById('confidenceBadge');
+                badge.textContent = data.confidence.toUpperCase();
+                badge.className = `confidence-badge ${data.confidence}`;
+
+                document.getElementById('procTime').textContent = 
+                    `${data.processing_time_seconds}s`;
+
+                const sourcesList = document.getElementById('sourcesList');
+                sourcesList.innerHTML = '';
+                data.sources.forEach(src => {
+                    const div = document.createElement('div');
+                    div.className = 'source-item';
+                    div.textContent = src;
+                    sourcesList.appendChild(div);
+                });
+
+                const caveat = document.getElementById('caveatBox');
+                if (data.caveat) {
+                    caveat.textContent = `⚠ ${data.caveat}`;
+                    caveat.style.display = 'block';
+                } else {
+                    caveat.style.display = 'none';
+                }
+
+                document.getElementById('responsePanel').classList.add('visible');
+
+            } catch(e) {
+                const err = document.getElementById('errorBox');
+                err.textContent = `ERROR: ${e.message}`;
+                err.classList.add('visible');
+            } finally {
+                document.getElementById('submitBtn').disabled = false;
+                document.getElementById('loading').classList.remove('visible');
+            }
+        }
+
+        loadDocs();
+    </script>
+</body>
+</html>
