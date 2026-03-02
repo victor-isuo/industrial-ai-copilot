@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from contextlib import asynccontextmanager
 import logging
 import time
-
+import os
 from src.core.document_loader import load_documents, chunk_documents
 from src.core.vector_store import load_vector_store, create_vector_store
 from src.core.retriever import create_hybrid_retriever
@@ -159,3 +159,7 @@ async def list_documents():
         "indexed_documents": [d.name for d in docs],
         "total": len(docs)
     }
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)    
