@@ -18,8 +18,8 @@ dist/
 .vscode/
 
 #Data files
-data/raw/
 data/processed/
+data/vectorstore/
 
 # OS
 .DS_Store
