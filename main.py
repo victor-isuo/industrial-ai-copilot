@@ -1,17 +1,19 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
 import logging
 import time
 import os
+import asyncio
+
 from src.core.document_loader import load_documents, chunk_documents
 from src.core.vector_store import load_vector_store, create_vector_store
 from src.core.retriever import create_hybrid_retriever
 from src.core.reranker import CohereReranker
 from src.core.rag_pipeline import RAGPipeline
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -20,38 +22,42 @@ logger = logging.getLogger(__name__)
 pipeline = None
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
+async def initialize_pipeline():
     """
-    Initialize pipeline on startup.
-    Why lifespan context manager:
-    - Loads heavy components once at startup, not per request
-    - Embedding model and vector store stay in memory
-    - Requests are fast because everything is pre-loaded
+    Initialize pipeline in background after server starts.
+    This prevents Render port timeout by letting server bind first.
     """
     global pipeline
-    logger.info("Starting Industrial AI Copilot API...")
-
     try:
+        logger.info("Initializing pipeline in background...")
         docs = load_documents()
         chunks = chunk_documents(docs)
 
         try:
             vector_store = load_vector_store()
         except FileNotFoundError:
-            logger.info("Vector store not found, creating...")
+            logger.info("Vector store not found, creating from scratch...")
             vector_store = create_vector_store(chunks)
 
         retriever = create_hybrid_retriever(vector_store, chunks)
         reranker = CohereReranker(top_n=5)
         pipeline = RAGPipeline(retriever=retriever, reranker=reranker)
-
-        logger.info("Pipeline ready. API is live.")
-        yield
+        logger.info("Pipeline ready. System operational.")
 
     except Exception as e:
-        logger.error(f"Failed to initialize pipeline: {e}")
-        raise
+        logger.error(f"Pipeline initialization failed: {e}")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Server starts immediately and binds to port.
+    Pipeline loads in background after startup.
+    """
+    logger.info("Starting Industrial AI Copilot API...")
+    asyncio.create_task(initialize_pipeline())
+    yield
+    logger.info("Shutting down...")
 
 
 # Initialize FastAPI app
@@ -62,18 +68,21 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS middleware for frontend access
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Serve frontend
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/ui")
 async def frontend():
     return FileResponse("static/index.html")
+
 
 # --- Request/Response Models ---
 class QueryRequest(BaseModel):
@@ -118,12 +127,12 @@ async def health():
 async def query(request: QueryRequest):
     """
     Query the industrial knowledge base.
-    Returns a grounded answer with source citations and confidence score.
+    Returns grounded answer with source citations and confidence score.
     """
     if not pipeline:
         raise HTTPException(
             status_code=503,
-            detail="Pipeline not initialized. Try again in a moment."
+            detail="Pipeline is still initializing. Please wait 30 seconds and try again."
         )
 
     if not request.question.strip():
@@ -159,7 +168,9 @@ async def list_documents():
         "indexed_documents": [d.name for d in docs],
         "total": len(docs)
     }
+
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 10000))
-    uvicorn.run(app, host="0.0.0.0", port=port)    
+    uvicorn.run(app, host="0.0.0.0", port=port)
