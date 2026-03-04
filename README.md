@@ -1,3 +1,12 @@
+---
+title: Industrial AI Copilot
+emoji: ⚙️
+colorFrom: orange
+colorTo: blue
+sdk: docker
+pinned: false
+---
+
 # Industrial AI Copilot
 
 A modular RAG and multi-agent platform for industrial engineering documentation.
@@ -65,4 +74,3 @@ Retrieval performance is measured continuously:
 ## Author
 
 Built by Victor Isuo — Applied LLM Engineer
-[LinkedIn] | [GitHub]
