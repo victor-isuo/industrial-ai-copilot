@@ -1,7 +1,7 @@
 ---
 title: Industrial AI Copilot
 emoji: ⚙️
-colorFrom: orange
+colorFrom: red
 colorTo: blue
 sdk: docker
 pinned: false
