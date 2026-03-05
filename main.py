@@ -164,6 +164,8 @@ async def list_documents():
     """List all indexed documents."""
     from pathlib import Path
     docs = list(Path("data/raw").glob("*.pdf"))
+    if not docs:
+        docs = list(Path(".").glob("*.pdf"))
     return {
         "indexed_documents": [d.name for d in docs],
         "total": len(docs)

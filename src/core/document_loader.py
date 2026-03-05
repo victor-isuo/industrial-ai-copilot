@@ -7,17 +7,28 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def load_documents(data_dir: str = "data/raw") -> list:
+def load_documents(data_dir: str = None) -> list:
     """
-    Load all PDFs from the data directory.
-    Returns a list of LangChain Document objects.
+    Load all PDFs. Checks data/raw first, then root directory.
+    Supports both local development and Hugging Face deployment.
     """
     documents = []
-    data_path = Path(data_dir)
-    pdf_files = list(data_path.glob("*.pdf"))
+    
+    # Check data/raw first, then root
+    search_dirs = ["data/raw", "."]
+    if data_dir:
+        search_dirs = [data_dir]
+    
+    pdf_files = []
+    for search_dir in search_dirs:
+        found = list(Path(search_dir).glob("*.pdf"))
+        if found:
+            pdf_files = found
+            logger.info(f"Found PDFs in: {search_dir}")
+            break
     
     if not pdf_files:
-        logger.warning(f"No PDFs found in {data_dir}")
+        logger.warning("No PDFs found in any location")
         return []
     
     for pdf_path in pdf_files:
@@ -34,7 +45,6 @@ def load_documents(data_dir: str = "data/raw") -> list:
     logger.info(f"Total pages loaded: {len(documents)}")
     return documents
 
-
 def chunk_documents(documents: list) -> list:
     """
     Split documents into chunks using recursive character splitting.
@@ -45,8 +55,8 @@ def chunk_documents(documents: list) -> list:
     - Overlap ensures context isn't lost at chunk boundaries
     """
     splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=200,
+        chunk_size=512,
+        chunk_overlap=100,
         length_function=len,
         separators=["\n\n", "\n", ". ", " ", ""]
     )

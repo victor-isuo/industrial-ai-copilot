@@ -40,9 +40,9 @@ class HybridRetriever:
 def create_hybrid_retriever(
     vector_store: Chroma,
     chunks: List[Document],
-    vector_weight: float = 0.6,
-    bm25_weight: float = 0.4,
-    k: int = 5
+    vector_weight: float = 0.5,
+    bm25_weight: float = 0.5,
+    k: int = 8
 ) -> HybridRetriever:
     """
     Create a hybrid retriever combining dense and sparse search.
