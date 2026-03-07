@@ -23,21 +23,18 @@ pipeline = None
 
 
 async def initialize_pipeline():
-    """
-    Initialize pipeline in background after server starts.
-    This prevents Render port timeout by letting server bind first.
-    """
     global pipeline
     try:
         logger.info("Initializing pipeline in background...")
         docs = load_documents()
         chunks = chunk_documents(docs)
 
-        try:
-            vector_store = load_vector_store()
-        except FileNotFoundError:
-            logger.info("Vector store not found, creating from scratch...")
-            vector_store = create_vector_store(chunks)
+        if not chunks:
+            logger.error("No documents found. Check PDF files are present.")
+            return
+
+        logger.info("Building vector store from documents...")
+        vector_store = create_vector_store(chunks)
 
         retriever = create_hybrid_retriever(vector_store, chunks)
         reranker = CohereReranker(top_n=5)
