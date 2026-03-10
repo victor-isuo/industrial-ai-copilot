@@ -6,11 +6,11 @@ logger = logging.getLogger(__name__)
 
 @tool
 def spec_checker(
-    measured_value: float,
-    spec_value: float,
+    measured_value: str,
+    spec_value: str,
     parameter_name: str,
     unit: str,
-    tolerance_percent: float = 10.0
+    tolerance_percent: str = "10.0"
 ) -> str:
     """
     Compare a measured reading against a documented specification.
@@ -18,17 +18,17 @@ def spec_checker(
     and need to check if it's within acceptable limits.
 
     Args:
-        measured_value: The actual measured or observed value
-        spec_value: The specification or rated value from documentation
+        measured_value: The actual measured or observed value (as a number)
+        spec_value: The specification or rated value from documentation (as a number)
         parameter_name: What is being measured (e.g., 'pressure', 'temperature')
         unit: The unit of measurement (e.g., 'psi', 'bar', 'rpm')
-        tolerance_percent: Acceptable deviation percentage (default 10%)
+        tolerance_percent: Acceptable deviation percentage (default 10.0)
     """
-    logger.info(
-        f"Spec checker: {parameter_name} measured={measured_value} "
-        f"spec={spec_value} tolerance={tolerance_percent}%"
-    )
-
+    # Cast strings to float
+    measured_value = float(measured_value)
+    spec_value = float(spec_value)
+    tolerance_percent = float(tolerance_percent)
+    
     try:
         deviation = measured_value - spec_value
         deviation_percent = (deviation / spec_value) * 100

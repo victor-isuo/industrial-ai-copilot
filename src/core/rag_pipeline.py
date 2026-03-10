@@ -57,11 +57,11 @@ class RAGPipeline:
         self.retriever = retriever
         self.reranker = reranker
         self.llm = ChatGroq(
-            model="llama-3.1-8b-instant",
+            model="meta-llama/llama-4-scout-17b-16e-instruct",
             groq_api_key=os.getenv("GROQ_API_KEY"),
             temperature=0.1  # Low temperature for factual accuracy
         )
-        logger.info("RAG Pipeline initialized with Groq Llama 3.1")
+        logger.info("RAG Pipeline initialized with Groq Llama 4")
 
     def _format_context(self, documents: list[Document]) -> str:
         """Format retrieved documents into context string."""

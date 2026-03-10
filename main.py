@@ -14,13 +14,13 @@ from src.core.vector_store import load_vector_store, create_vector_store
 from src.core.retriever import create_hybrid_retriever
 from src.core.reranker import CohereReranker
 from src.core.rag_pipeline import RAGPipeline
-
+from src.agents.maintenance_agent import MaintenanceAgent
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Global pipeline instance
 pipeline = None
-
+agent = None
 
 async def initialize_pipeline():
     global pipeline
@@ -40,7 +40,11 @@ async def initialize_pipeline():
         reranker = CohereReranker(top_n=5)
         pipeline = RAGPipeline(retriever=retriever, reranker=reranker)
         logger.info("Pipeline ready. System operational.")
-
+       
+        # Initialize agent
+        global agent
+        agent = MaintenanceAgent(pipeline=pipeline)
+        logger.info("Maintenance Agent ready.")
     except Exception as e:
         logger.error(f"Pipeline initialization failed: {e}")
 
@@ -168,8 +172,50 @@ async def list_documents():
         "total": len(docs)
     }
 
+class AgentRequest(BaseModel):
+    question: str
+
+class AgentResponse(BaseModel):
+    answer: str
+    tools_used: list[str]
+    steps_taken: int
+    processing_time_seconds: float
+
+@app.post("/agent", response_model=AgentResponse)
+async def run_agent(request: AgentRequest):
+    """
+    Run the agentic maintenance assistant.
+    Uses LangGraph agent with tool use for complex multi-step reasoning.
+    """
+    if not agent:
+        raise HTTPException(
+            status_code=503,
+            detail="Agent not initialized yet. Please wait and try again."
+        )
+
+    if not request.question.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Question cannot be empty."
+        )
+
+    try:
+        start = time.time()
+        result = agent.run(request.question)
+        elapsed = round(time.time() - start, 2)
+
+        return AgentResponse(
+            answer=result["answer"],
+            tools_used=result["tools_used"],
+            steps_taken=result["steps_taken"],
+            processing_time_seconds=elapsed
+        )
+
+    except Exception as e:
+        logger.error(f"Agent query failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.environ.get("PORT", 10000))
+    port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)

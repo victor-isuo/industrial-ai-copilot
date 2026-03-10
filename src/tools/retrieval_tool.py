@@ -1,5 +1,5 @@
 from langchain.tools import tool
-from langchain.schema import Document
+from langchain_core.documents import Document
 from typing import Optional
 import logging
 
