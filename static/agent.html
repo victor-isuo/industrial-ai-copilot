@@ -3,564 +3,1245 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Industrial AI Copilot — Agent</title>
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <title>Industrial AI Copilot — Agent Mode</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&family=Bebas+Neue&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #0a0e14;
-            --panel: #111820;
-            --border: #1e2d3d;
-            --accent: #e87c34;
-            --accent2: #4fc3f7;
-            --accent3: #a78bfa;
-            --text: #cdd6e0;
-            --text-dim: #4a6072;
-            --success: #43d98c;
-            --warning: #f0c040;
-            --danger: #e05c5c;
-            --mono: 'Share Tech Mono', monospace;
-            --sans: 'Barlow', sans-serif;
+            --bg-deep: #060810;
+            --bg-panel: #0c1018;
+            --bg-card: #111826;
+            --bg-input: #080c12;
+            --border: #1a2535;
+            --border-bright: #253347;
+            --orange: #f07020;
+            --orange-dim: #a84e16;
+            --orange-glow: rgba(240,112,32,0.15);
+            --cyan: #00d4ff;
+            --cyan-dim: #007a94;
+            --cyan-glow: rgba(0,212,255,0.12);
+            --green: #00e676;
+            --green-dim: #007a3d;
+            --green-glow: rgba(0,230,118,0.12);
+            --yellow: #ffd740;
+            --red: #ff4444;
+            --text-bright: #e8f0f8;
+            --text-mid: #8aa0b8;
+            --text-dim: #3a4e62;
+            --mono: 'JetBrains Mono', monospace;
+            --display: 'Bebas Neue', sans-serif;
+            --ui: 'Rajdhani', sans-serif;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background: var(--bg);
-            color: var(--text);
-            font-family: var(--sans);
+            background: var(--bg-deep);
+            color: var(--text-bright);
+            font-family: var(--ui);
             min-height: 100vh;
             overflow-x: hidden;
+            position: relative;
         }
 
+        /* Animated background grid */
         body::before {
             content: '';
             position: fixed;
             inset: 0;
             background-image:
-                linear-gradient(rgba(167,139,250,0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(167,139,250,0.03) 1px, transparent 1px);
-            background-size: 40px 40px;
+                linear-gradient(rgba(0,212,255,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,212,255,0.04) 1px, transparent 1px);
+            background-size: 32px 32px;
+            animation: gridShift 20s linear infinite;
             pointer-events: none;
             z-index: 0;
         }
 
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 40px 24px;
-            position: relative;
+        /* Scan line overlay */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0,0,0,0.08) 2px,
+                rgba(0,0,0,0.08) 4px
+            );
+            pointer-events: none;
             z-index: 1;
         }
 
-        header {
-            margin-bottom: 40px;
-            animation: fadeDown 0.6s ease both;
+        @keyframes gridShift {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(32px); }
         }
 
-        .header-tag {
+        /* Top danger stripe */
+        .hazard-stripe {
+            height: 4px;
+            background: repeating-linear-gradient(
+                90deg,
+                var(--orange) 0px,
+                var(--orange) 20px,
+                var(--bg-deep) 20px,
+                var(--bg-deep) 30px
+            );
+            position: relative;
+            z-index: 10;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            grid-template-rows: auto 1fr;
+            min-height: calc(100vh - 4px);
+            position: relative;
+            z-index: 2;
+        }
+
+        /* ─── SIDEBAR ─── */
+        .sidebar {
+            grid-row: 1 / 3;
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .sidebar-logo {
+            padding: 24px 20px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo-tag {
             font-family: var(--mono);
-            font-size: 11px;
-            color: var(--accent3);
+            font-size: 9px;
+            color: var(--orange);
             letter-spacing: 3px;
             text-transform: uppercase;
-            margin-bottom: 12px;
+            margin-bottom: 6px;
         }
 
-        h1 {
-            font-size: clamp(28px, 5vw, 42px);
-            font-weight: 700;
-            color: #fff;
-            line-height: 1.1;
+        .logo-title {
+            font-family: var(--display);
+            font-size: 26px;
+            letter-spacing: 2px;
+            color: var(--text-bright);
+            line-height: 1;
+        }
+
+        .logo-title span { color: var(--orange); }
+
+        .logo-sub {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+            margin-top: 4px;
+        }
+
+        /* System status */
+        .sys-status {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .status-title {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--text-dim);
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+
+        .status-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .status-indicator {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .status-indicator.online {
+            background: var(--green);
+            box-shadow: 0 0 6px var(--green);
+            animation: blink 2s infinite;
+        }
+
+        .status-indicator.warning {
+            background: var(--yellow);
+            box-shadow: 0 0 6px var(--yellow);
+        }
+
+        .status-label {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-mid);
+            flex: 1;
+        }
+
+        .status-value {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--green);
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* Nav */
+        .nav-section {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .nav-label {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--text-dim);
+            letter-spacing: 2px;
             margin-bottom: 8px;
         }
 
-        h1 span { color: var(--accent3); }
-
-        .subtitle {
-            font-size: 14px;
-            color: var(--text-dim);
-            font-weight: 300;
-        }
-
-        .nav-bar {
+        .nav-item {
             display: flex;
-            gap: 12px;
-            margin-bottom: 32px;
-            animation: fadeDown 0.6s 0.1s ease both;
-        }
-
-        .nav-btn {
-            font-family: var(--mono);
-            font-size: 12px;
-            padding: 8px 16px;
-            border: 1px solid var(--border);
-            color: var(--text-dim);
-            background: transparent;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            margin-bottom: 2px;
             cursor: pointer;
             transition: all 0.2s;
             text-decoration: none;
-            display: inline-block;
+            border: 1px solid transparent;
         }
 
-        .nav-btn:hover { border-color: var(--accent2); color: var(--accent2); transform: none; }
-        .nav-btn.active { border-color: var(--accent3); color: var(--accent3); background: rgba(167,139,250,0.08); }
+        .nav-item:hover {
+            background: var(--bg-card);
+            border-color: var(--border);
+        }
 
-        .status-bar {
+        .nav-item.active {
+            background: var(--orange-glow);
+            border-color: var(--orange-dim);
+        }
+
+        .nav-icon {
+            font-size: 14px;
+            width: 16px;
+            text-align: center;
+        }
+
+        .nav-text {
+            font-family: var(--ui);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-mid);
+            letter-spacing: 1px;
+        }
+
+        .nav-item.active .nav-text { color: var(--orange); }
+
+        /* Tools panel */
+        .tools-section {
+            padding: 16px 20px;
+            flex: 1;
+        }
+
+        .tools-label {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--text-dim);
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+
+        .tool-item {
             display: flex;
             align-items: center;
-            gap: 24px;
-            padding: 12px 16px;
-            background: var(--panel);
-            border: 1px solid var(--border);
-            border-left: 3px solid var(--accent3);
-            margin-bottom: 32px;
-            font-family: var(--mono);
-            font-size: 12px;
-            animation: fadeDown 0.6s 0.15s ease both;
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--accent3);
-            box-shadow: 0 0 8px var(--accent3);
-            animation: pulse 2s infinite;
-        }
-
-        .status-text { color: var(--accent3); }
-
-        .tools-bar {
-            display: flex;
             gap: 8px;
-            flex-wrap: wrap;
-            margin-bottom: 32px;
-            animation: fadeDown 0.6s 0.2s ease both;
+            padding: 8px 10px;
+            margin-bottom: 4px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            transition: all 0.3s;
         }
 
-        .tool-chip {
+        .tool-item.firing {
+            border-color: var(--cyan);
+            background: var(--cyan-glow);
+            box-shadow: 0 0 12px var(--cyan-glow);
+        }
+
+        .tool-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--text-dim);
+            flex-shrink: 0;
+        }
+
+        .tool-item.firing .tool-dot {
+            background: var(--cyan);
+            box-shadow: 0 0 6px var(--cyan);
+            animation: blink 0.5s infinite;
+        }
+
+        .tool-name {
             font-family: var(--mono);
-            font-size: 11px;
-            padding: 4px 10px;
-            border: 1px solid var(--border);
+            font-size: 10px;
             color: var(--text-dim);
-            background: var(--panel);
+            flex: 1;
         }
 
-        .tool-chip.active {
-            border-color: var(--accent3);
-            color: var(--accent3);
-            background: rgba(167,139,250,0.08);
-            box-shadow: 0 0 8px rgba(167,139,250,0.2);
-        }
+        .tool-item.firing .tool-name { color: var(--cyan); }
 
-        .query-panel {
-            background: var(--panel);
-            border: 1px solid var(--border);
-            padding: 24px;
-            margin-bottom: 24px;
-            animation: fadeDown 0.6s 0.25s ease both;
-        }
-
-        .panel-label {
+        .tool-status {
             font-family: var(--mono);
-            font-size: 11px;
-            color: var(--accent3);
-            letter-spacing: 2px;
-            margin-bottom: 16px;
+            font-size: 9px;
+            color: var(--text-dim);
         }
 
-        .input-row {
+        .tool-item.firing .tool-status { color: var(--cyan); }
+
+        /* Knowledge base stats */
+        .kb-section {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .kb-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .kb-label {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--text-dim);
+        }
+
+        .kb-value {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--orange);
+            font-weight: 500;
+        }
+
+        /* ─── MAIN CONTENT ─── */
+        .top-bar {
+            padding: 16px 28px;
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .top-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .mode-badge {
+            font-family: var(--display);
+            font-size: 22px;
+            letter-spacing: 3px;
+            color: var(--orange);
+        }
+
+        .top-bar-divider {
+            width: 1px;
+            height: 20px;
+            background: var(--border-bright);
+        }
+
+        .top-bar-sub {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+        }
+
+        .top-bar-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--green);
+            letter-spacing: 1px;
+        }
+
+        .live-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 8px var(--green);
+            animation: blink 1.5s infinite;
+        }
+
+        .content-area {
+            padding: 24px 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+        }
+
+        /* Query input section */
+        .query-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .query-section::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--orange), var(--cyan), var(--orange));
+            background-size: 200% 100%;
+            animation: shimmer 3s linear infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .query-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 20px 0;
+        }
+
+        .query-label {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--orange);
+            letter-spacing: 2px;
+        }
+
+        .query-hint {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--text-dim);
+        }
+
+        .query-body {
+            padding: 12px 20px;
             display: flex;
             gap: 12px;
+            align-items: flex-end;
         }
 
         textarea {
             flex: 1;
-            background: var(--bg);
+            background: var(--bg-input);
             border: 1px solid var(--border);
-            color: var(--text);
-            font-family: var(--sans);
+            color: var(--text-bright);
+            font-family: var(--ui);
             font-size: 15px;
+            font-weight: 500;
             padding: 14px 16px;
             resize: none;
-            height: 100px;
+            height: 90px;
             outline: none;
-            transition: border-color 0.2s;
+            transition: border-color 0.2s, box-shadow 0.2s;
             line-height: 1.5;
+            letter-spacing: 0.3px;
         }
 
-        textarea:focus { border-color: var(--accent3); }
-        textarea::placeholder { color: var(--text-dim); }
+        textarea:focus {
+            border-color: var(--orange-dim);
+            box-shadow: 0 0 0 1px var(--orange-dim), inset 0 0 20px rgba(240,112,32,0.04);
+        }
 
-        button {
-            background: var(--accent3);
+        textarea::placeholder { color: var(--text-dim); font-weight: 400; }
+
+        .execute-btn {
+            background: var(--orange);
             color: #000;
             border: none;
-            padding: 0 28px;
-            font-family: var(--mono);
-            font-size: 13px;
-            font-weight: 700;
-            letter-spacing: 1px;
+            padding: 0 24px;
+            height: 90px;
+            font-family: var(--display);
+            font-size: 18px;
+            letter-spacing: 3px;
             cursor: pointer;
             transition: all 0.2s;
-            white-space: nowrap;
-            align-self: stretch;
+            position: relative;
+            overflow: hidden;
+            min-width: 120px;
         }
 
-        button:hover { background: #c4b5fd; transform: translateY(-1px); }
-        button:active { transform: translateY(0); }
-        button:disabled { background: var(--text-dim); cursor: not-allowed; transform: none; }
+        .execute-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
 
-        .examples {
-            margin-top: 12px;
+        .execute-btn:hover { background: #ff8c40; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(240,112,32,0.4); }
+        .execute-btn:hover::before { opacity: 1; }
+        .execute-btn:active { transform: translateY(0); }
+        .execute-btn:disabled { background: var(--text-dim); cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* Example queries */
+        .examples-row {
+            padding: 0 20px 14px;
             display: flex;
-            gap: 8px;
+            gap: 6px;
             flex-wrap: wrap;
+            align-items: center;
         }
 
-        .example-btn {
+        .ex-label {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+            margin-right: 4px;
+        }
+
+        .ex-btn {
+            font-family: var(--mono);
+            font-size: 10px;
+            padding: 4px 10px;
             background: transparent;
             border: 1px solid var(--border);
             color: var(--text-dim);
-            font-family: var(--mono);
-            font-size: 11px;
-            padding: 4px 10px;
             cursor: pointer;
             transition: all 0.2s;
             letter-spacing: 0;
+            height: auto;
+            min-width: unset;
         }
 
-        .example-btn:hover {
-            border-color: var(--accent3);
-            color: var(--accent3);
+        .ex-btn:hover {
+            border-color: var(--cyan-dim);
+            color: var(--cyan);
+            background: var(--cyan-glow);
             transform: none;
-            background: transparent;
+            box-shadow: none;
         }
 
-        .loading {
+        /* Reasoning display */
+        .reasoning-panel {
             display: none;
-            flex-direction: column;
-            gap: 12px;
-            padding: 24px;
-            background: var(--panel);
+            background: var(--bg-card);
             border: 1px solid var(--border);
-            margin-bottom: 24px;
+            overflow: hidden;
         }
 
-        .loading.visible { display: flex; }
+        .reasoning-panel.visible { display: block; }
 
-        .loading-header {
+        .reasoning-header {
             display: flex;
             align-items: center;
             gap: 12px;
-            font-family: var(--mono);
-            font-size: 13px;
-            color: var(--accent3);
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-panel);
         }
 
-        .loader {
-            width: 16px;
-            height: 16px;
-            border: 2px solid var(--border);
-            border-top-color: var(--accent3);
+        .reasoning-spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid var(--border-bright);
+            border-top-color: var(--orange);
             border-radius: 50%;
-            animation: spin 0.8s linear infinite;
+            animation: spin 0.7s linear infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .reasoning-title {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--orange);
+            letter-spacing: 2px;
+            flex: 1;
+        }
+
+        .reasoning-timer {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-dim);
         }
 
         .reasoning-steps {
+            padding: 16px 20px;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 8px;
         }
 
-        .reasoning-step {
+        .r-step {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0.3;
+            transition: all 0.4s;
+        }
+
+        .r-step.active { opacity: 1; }
+
+        .r-step-num {
             font-family: var(--mono);
-            font-size: 11px;
+            font-size: 9px;
             color: var(--text-dim);
-            padding: 4px 0;
-            border-left: 2px solid var(--border);
-            padding-left: 12px;
-            animation: fadeIn 0.3s ease both;
+            width: 16px;
+            flex-shrink: 0;
         }
 
-        .reasoning-step.active {
-            color: var(--accent3);
-            border-left-color: var(--accent3);
+        .r-step.active .r-step-num { color: var(--orange); }
+
+        .r-step-bar {
+            width: 3px;
+            height: 20px;
+            background: var(--border);
+            flex-shrink: 0;
+            transition: background 0.3s;
         }
 
-        .response-panel {
-            background: var(--panel);
-            border: 1px solid var(--border);
-            padding: 24px;
+        .r-step.active .r-step-bar { background: var(--orange); }
+        .r-step.done .r-step-bar { background: var(--green); }
+
+        .r-step-text {
+            font-family: var(--ui);
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-dim);
+            letter-spacing: 0.5px;
+        }
+
+        .r-step.active .r-step-text { color: var(--text-bright); }
+        .r-step.done .r-step-text { color: var(--green); }
+
+        .r-step-check {
+            margin-left: auto;
+            font-size: 12px;
             display: none;
-            animation: fadeUp 0.4s ease both;
+        }
+
+        .r-step.done .r-step-check { display: block; color: var(--green); }
+
+        /* Response panel */
+        .response-panel {
+            display: none;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            animation: slideUp 0.4s ease both;
         }
 
         .response-panel.visible { display: block; }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
         .response-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 20px;
-            padding-bottom: 16px;
+            padding: 14px 20px;
+            background: var(--bg-panel);
             border-bottom: 1px solid var(--border);
         }
 
-        .meta-row {
-            display: flex;
-            gap: 16px;
-            align-items: center;
-        }
-
-        .meta-item {
+        .response-label {
             font-family: var(--mono);
-            font-size: 11px;
-            color: var(--text-dim);
+            font-size: 10px;
+            color: var(--green);
+            letter-spacing: 2px;
         }
 
-        .meta-item span {
-            color: var(--accent3);
+        .response-meta {
+            display: flex;
+            gap: 20px;
+        }
+
+        .meta-chip {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--mono);
+            font-size: 10px;
+        }
+
+        .meta-chip-label { color: var(--text-dim); }
+        .meta-chip-value { color: var(--cyan); }
+
+        .response-body {
+            padding: 24px 20px;
         }
 
         .answer-text {
+            font-family: var(--ui);
             font-size: 15px;
-            line-height: 1.8;
-            color: var(--text);
-            margin-bottom: 24px;
+            font-weight: 400;
+            line-height: 1.85;
+            color: var(--text-bright);
             white-space: pre-wrap;
+            letter-spacing: 0.2px;
         }
 
-        .tools-used-section {
-            margin-bottom: 16px;
-            padding: 16px;
-            background: var(--bg);
-            border: 1px solid var(--border);
+        /* Tools used */
+        .tools-fired {
+            margin-top: 20px;
+            padding: 16px 20px;
+            border-top: 1px solid var(--border);
         }
 
-        .tools-used-label {
+        .tools-fired-label {
             font-family: var(--mono);
-            font-size: 11px;
-            color: var(--accent3);
+            font-size: 9px;
+            color: var(--text-dim);
             letter-spacing: 2px;
             margin-bottom: 10px;
         }
 
-        .tools-used-list {
+        .tools-fired-list {
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
         }
 
-        .tool-used-badge {
+        .tool-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 12px;
+            background: var(--cyan-glow);
+            border: 1px solid var(--cyan-dim);
             font-family: var(--mono);
-            font-size: 11px;
-            padding: 4px 12px;
-            border: 1px solid var(--accent3);
-            color: var(--accent3);
-            background: rgba(167,139,250,0.08);
+            font-size: 10px;
+            color: var(--cyan);
         }
 
-        .error-box {
+        .tool-badge::before {
+            content: '◆';
+            font-size: 7px;
+        }
+
+        /* Error */
+        .error-panel {
             display: none;
-            padding: 16px;
-            border: 1px solid var(--danger);
-            background: rgba(224,92,92,0.08);
-            color: var(--danger);
+            padding: 16px 20px;
+            background: rgba(255,68,68,0.08);
+            border: 1px solid rgba(255,68,68,0.3);
             font-family: var(--mono);
-            font-size: 13px;
-            margin-bottom: 24px;
+            font-size: 12px;
+            color: var(--red);
         }
 
-        .error-box.visible { display: block; }
+        .error-panel.visible { display: block; }
 
-        @keyframes fadeDown {
-            from { opacity: 0; transform: translateY(-12px); }
-            to { opacity: 1; transform: translateY(0); }
+        /* Metrics row */
+        .metrics-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
         }
 
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(12px); }
-            to { opacity: 1; transform: translateY(0); }
+        .metric-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 14px 16px;
+            position: relative;
+            overflow: hidden;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+        .metric-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 2px;
+            background: var(--orange);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.5s ease;
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
+        .metric-card.active::after { transform: scaleX(1); }
+
+        .metric-label {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+            margin-bottom: 6px;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .metric-value {
+            font-family: var(--display);
+            font-size: 28px;
+            letter-spacing: 2px;
+            color: var(--text-bright);
+            line-height: 1;
+        }
+
+        .metric-unit {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-dim);
+            margin-top: 2px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+            .sidebar {
+                display: none;
+            }
+            .metrics-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="header-tag">// Industrial AI Copilot v2.0 — Agentic Layer</div>
-            <h1>Autonomous <span>Reasoning</span><br>Engine</h1>
-            <p class="subtitle">LangGraph agent with tool use — retrieval, calculation, spec checking, unit conversion</p>
-        </header>
 
-        <div class="nav-bar">
-            <a href="/ui" class="nav-btn">// RAG Search</a>
-            <a href="/agent-ui" class="nav-btn active">// Agent Mode</a>
+<div class="hazard-stripe"></div>
+
+<div class="main-layout">
+
+    <!-- ─── SIDEBAR ─── -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-tag">// v2.0 — Agentic</div>
+            <div class="logo-title">INDUSTRIAL<br><span>AI</span> COPILOT</div>
+            <div class="logo-sub">AUTONOMOUS REASONING ENGINE</div>
         </div>
 
-        <div class="status-bar">
-            <div class="status-dot"></div>
-            <span class="status-text">AGENT OPERATIONAL</span>
-            <span style="font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-left:auto;">4 TOOLS ACTIVE</span>
-        </div>
-
-        <div class="tools-bar">
-            <div class="tool-chip active">⚙ search_industrial_documentation</div>
-            <div class="tool-chip active">🔢 engineering_calculator</div>
-            <div class="tool-chip active">📐 unit_converter</div>
-            <div class="tool-chip active">✅ spec_checker</div>
-        </div>
-
-        <div class="query-panel">
-            <div class="panel-label">// AGENT QUERY</div>
-            <div class="input-row">
-                <textarea
-                    id="questionInput"
-                    placeholder="Describe a complex engineering problem — the agent will reason through it step by step..."
-                    onkeydown="handleKey(event)"
-                ></textarea>
-                <button id="submitBtn" onclick="submitQuery()">EXECUTE</button>
+        <div class="sys-status">
+            <div class="status-title">// SYSTEM STATUS</div>
+            <div class="status-row">
+                <div class="status-indicator online"></div>
+                <span class="status-label">Agent Core</span>
+                <span class="status-value">ONLINE</span>
             </div>
-            <div class="examples">
-                <span style="font-family:var(--mono);font-size:11px;color:var(--text-dim);align-self:center;">TRY:</span>
-                <button class="example-btn" onclick="setQuery(this.textContent)">Pump pressure 450 psi vs spec 380 psi — dangerous?</button>
-                <button class="example-btn" onclick="setQuery(this.textContent)">Convert 150 psi to bar and check if safe</button>
-                <button class="example-btn" onclick="setQuery(this.textContent)">Gear pump loses suction — diagnose and recommend</button>
-                <button class="example-btn" onclick="setQuery(this.textContent)">What PPE is needed for petroleum handling?</button>
+            <div class="status-row">
+                <div class="status-indicator online"></div>
+                <span class="status-label">RAG Pipeline</span>
+                <span class="status-value">READY</span>
+            </div>
+            <div class="status-row">
+                <div class="status-indicator online"></div>
+                <span class="status-label">LLM Gateway</span>
+                <span class="status-value">ACTIVE</span>
+            </div>
+            <div class="status-row">
+                <div class="status-indicator online"></div>
+                <span class="status-label">Tool Registry</span>
+                <span class="status-value">4 LOADED</span>
             </div>
         </div>
 
-        <div class="loading" id="loading">
-            <div class="loading-header">
-                <div class="loader"></div>
-                <span>Agent reasoning through your query...</span>
+        <div class="nav-section">
+            <div class="nav-label">// INTERFACES</div>
+            <a href="/ui" class="nav-item">
+                <span class="nav-icon">⬡</span>
+                <span class="nav-text">RAG SEARCH</span>
+            </a>
+            <a href="/agent-ui" class="nav-item active">
+                <span class="nav-icon">◈</span>
+                <span class="nav-text">AGENT MODE</span>
+            </a>
+        </div>
+
+        <div class="tools-section">
+            <div class="tools-label">// TOOL REGISTRY</div>
+            <div class="tool-item" id="tool-search">
+                <div class="tool-dot"></div>
+                <span class="tool-name">search_docs</span>
+                <span class="tool-status">IDLE</span>
             </div>
-            <div class="reasoning-steps" id="reasoningSteps">
-                <div class="reasoning-step active">→ Analyzing query intent</div>
-                <div class="reasoning-step" id="step2">→ Selecting tools</div>
-                <div class="reasoning-step" id="step3">→ Executing tool calls</div>
-                <div class="reasoning-step" id="step4">→ Synthesizing response</div>
+            <div class="tool-item" id="tool-calc">
+                <div class="tool-dot"></div>
+                <span class="tool-name">eng_calculator</span>
+                <span class="tool-status">IDLE</span>
+            </div>
+            <div class="tool-item" id="tool-unit">
+                <div class="tool-dot"></div>
+                <span class="tool-name">unit_converter</span>
+                <span class="tool-status">IDLE</span>
+            </div>
+            <div class="tool-item" id="tool-spec">
+                <div class="tool-dot"></div>
+                <span class="tool-name">spec_checker</span>
+                <span class="tool-status">IDLE</span>
             </div>
         </div>
 
-        <div class="error-box" id="errorBox"></div>
+        <div class="kb-section">
+            <div class="tools-label">// KNOWLEDGE BASE</div>
+            <div class="kb-stat">
+                <span class="kb-label">Documents</span>
+                <span class="kb-value">21</span>
+            </div>
+            <div class="kb-stat">
+                <span class="kb-label">Pages</span>
+                <span class="kb-value">1,109</span>
+            </div>
+            <div class="kb-stat">
+                <span class="kb-label">Chunks</span>
+                <span class="kb-value">5,091</span>
+            </div>
+            <div class="kb-stat">
+                <span class="kb-label">Model</span>
+                <span class="kb-value">LLAMA-4</span>
+            </div>
+        </div>
+    </aside>
 
-        <div class="response-panel" id="responsePanel">
-            <div class="response-header">
-                <div class="panel-label">// AGENT RESPONSE</div>
-                <div class="meta-row">
-                    <div class="meta-item">Steps: <span id="stepsCount">0</span></div>
-                    <div class="meta-item">Time: <span id="procTime">0s</span></div>
+    <!-- ─── MAIN ─── -->
+    <div style="display:flex;flex-direction:column;overflow:hidden;">
+
+        <div class="top-bar">
+            <div class="top-bar-left">
+                <div class="mode-badge">AGENT MODE</div>
+                <div class="top-bar-divider"></div>
+                <div class="top-bar-sub">LANGGRAPH · AUTONOMOUS TOOL ORCHESTRATION · MULTI-STEP REASONING</div>
+            </div>
+            <div class="top-bar-right">
+                <div class="live-indicator">
+                    <div class="live-dot"></div>
+                    LIVE
+                </div>
+            </div>
+        </div>
+
+        <div class="content-area">
+
+            <!-- Metrics -->
+            <div class="metrics-row">
+                <div class="metric-card" id="metric-queries">
+                    <div class="metric-label">QUERIES RUN</div>
+                    <div class="metric-value" id="val-queries">0</div>
+                    <div class="metric-unit">this session</div>
+                </div>
+                <div class="metric-card" id="metric-tools">
+                    <div class="metric-label">TOOLS FIRED</div>
+                    <div class="metric-value" id="val-tools">0</div>
+                    <div class="metric-unit">total calls</div>
+                </div>
+                <div class="metric-card" id="metric-steps">
+                    <div class="metric-label">LAST STEPS</div>
+                    <div class="metric-value" id="val-steps">—</div>
+                    <div class="metric-unit">reasoning chain</div>
+                </div>
+                <div class="metric-card" id="metric-time">
+                    <div class="metric-label">LAST LATENCY</div>
+                    <div class="metric-value" id="val-time">—</div>
+                    <div class="metric-unit">seconds</div>
                 </div>
             </div>
 
-            <div class="answer-text" id="answerText"></div>
-
-            <div class="tools-used-section">
-                <div class="tools-used-label">// TOOLS USED</div>
-                <div class="tools-used-list" id="toolsList"></div>
+            <!-- Query input -->
+            <div class="query-section">
+                <div class="query-header">
+                    <span class="query-label">// AGENT QUERY INPUT</span>
+                    <span class="query-hint">SHIFT+ENTER for new line · ENTER to execute</span>
+                </div>
+                <div class="query-body">
+                    <textarea
+                        id="questionInput"
+                        placeholder="Describe the engineering problem — the agent will plan and execute tool sequences autonomously..."
+                        onkeydown="handleKey(event)"
+                    ></textarea>
+                    <button class="execute-btn" id="submitBtn" onclick="submitQuery()">EXECUTE</button>
+                </div>
+                <div class="examples-row">
+                    <span class="ex-label">TRY →</span>
+                    <button class="ex-btn" onclick="setQuery(this.textContent)">Pump 450 psi vs spec 380 psi</button>
+                    <button class="ex-btn" onclick="setQuery(this.textContent)">Convert 150 psi to bar — safe?</button>
+                    <button class="ex-btn" onclick="setQuery(this.textContent)">Gear pump loses suction — diagnose</button>
+                    <button class="ex-btn" onclick="setQuery(this.textContent)">PPE requirements for petroleum handling</button>
+                    <button class="ex-btn" onclick="setQuery(this.textContent)">Vibration 2.8 mm/s vs ISO spec 2.3 mm/s</button>
+                </div>
             </div>
+
+            <!-- Reasoning panel -->
+            <div class="reasoning-panel" id="reasoningPanel">
+                <div class="reasoning-header">
+                    <div class="reasoning-spinner"></div>
+                    <span class="reasoning-title">// AGENT REASONING</span>
+                    <span class="reasoning-timer" id="elapsedTimer">0.0s</span>
+                </div>
+                <div class="reasoning-steps">
+                    <div class="r-step active" id="rs1">
+                        <span class="r-step-num">01</span>
+                        <div class="r-step-bar"></div>
+                        <span class="r-step-text">Parsing query intent and context</span>
+                        <span class="r-step-check">✓</span>
+                    </div>
+                    <div class="r-step" id="rs2">
+                        <span class="r-step-num">02</span>
+                        <div class="r-step-bar"></div>
+                        <span class="r-step-text">Planning tool execution sequence</span>
+                        <span class="r-step-check">✓</span>
+                    </div>
+                    <div class="r-step" id="rs3">
+                        <span class="r-step-num">03</span>
+                        <div class="r-step-bar"></div>
+                        <span class="r-step-text">Executing tool calls</span>
+                        <span class="r-step-check">✓</span>
+                    </div>
+                    <div class="r-step" id="rs4">
+                        <span class="r-step-num">04</span>
+                        <div class="r-step-bar"></div>
+                        <span class="r-step-text">Synthesizing findings into response</span>
+                        <span class="r-step-check">✓</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error -->
+            <div class="error-panel" id="errorPanel"></div>
+
+            <!-- Response -->
+            <div class="response-panel" id="responsePanel">
+                <div class="response-header">
+                    <span class="response-label">// AGENT RESPONSE — COMPLETE</span>
+                    <div class="response-meta">
+                        <div class="meta-chip">
+                            <span class="meta-chip-label">STEPS</span>
+                            <span class="meta-chip-value" id="respSteps">—</span>
+                        </div>
+                        <div class="meta-chip">
+                            <span class="meta-chip-label">TIME</span>
+                            <span class="meta-chip-value" id="respTime">—</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="response-body">
+                    <div class="answer-text" id="answerText"></div>
+                </div>
+                <div class="tools-fired">
+                    <div class="tools-fired-label">// TOOLS EXECUTED</div>
+                    <div class="tools-fired-list" id="toolsFiredList"></div>
+                </div>
+            </div>
+
         </div>
     </div>
+</div>
 
-    <script>
-        const API = window.location.origin;
-        let stepTimer = null;
+<script>
+    const API = window.location.origin;
+    let sessionQueries = 0;
+    let sessionToolsFired = 0;
+    let timerInterval = null;
+    let startTime = null;
+    let stepTimers = [];
 
-        function setQuery(text) {
-            document.getElementById('questionInput').value = text;
-            document.getElementById('questionInput').focus();
+    const TOOL_IDS = {
+        'search_industrial_documentation': 'tool-search',
+        'engineering_calculator': 'tool-calc',
+        'unit_converter': 'tool-unit',
+        'spec_checker': 'tool-spec'
+    };
+
+    function setQuery(text) {
+        document.getElementById('questionInput').value = text;
+        document.getElementById('questionInput').focus();
+    }
+
+    function handleKey(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            submitQuery();
         }
+    }
 
-        function handleKey(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                submitQuery();
+    function resetToolRegistry() {
+        Object.values(TOOL_IDS).forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.classList.remove('firing');
+                el.querySelector('.tool-status').textContent = 'IDLE';
             }
-        }
+        });
+    }
 
-        function animateSteps() {
-            const steps = ['step2', 'step3', 'step4'];
-            let i = 0;
-            stepTimer = setInterval(() => {
-                if (i < steps.length) {
-                    document.getElementById(steps[i]).classList.add('active');
-                    i++;
-                }
-            }, 3000);
-        }
+    function fireToolAnimation(toolNames) {
+        resetToolRegistry();
+        toolNames.forEach((name, i) => {
+            const id = TOOL_IDS[name];
+            if (id) {
+                setTimeout(() => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.classList.add('firing');
+                        el.querySelector('.tool-status').textContent = 'EXEC';
+                    }
+                }, i * 600);
+            }
+        });
+    }
 
-        async function submitQuery() {
-            const question = document.getElementById('questionInput').value.trim();
-            if (!question) return;
+    function startReasoningAnimation() {
+        const steps = ['rs1', 'rs2', 'rs3', 'rs4'];
+        steps.forEach(id => {
+            const el = document.getElementById(id);
+            el.classList.remove('active', 'done');
+        });
+        document.getElementById('rs1').classList.add('active');
 
-            // UI state: loading
-            document.getElementById('submitBtn').disabled = true;
-            document.getElementById('loading').classList.add('visible');
-            document.getElementById('responsePanel').classList.remove('visible');
-            document.getElementById('errorBox').classList.remove('visible');
+        stepTimers = [];
+        stepTimers.push(setTimeout(() => {
+            document.getElementById('rs1').classList.add('done');
+            document.getElementById('rs2').classList.add('active');
+        }, 2000));
+        stepTimers.push(setTimeout(() => {
+            document.getElementById('rs2').classList.add('done');
+            document.getElementById('rs3').classList.add('active');
+        }, 5000));
+        stepTimers.push(setTimeout(() => {
+            document.getElementById('rs3').classList.add('done');
+            document.getElementById('rs4').classList.add('active');
+        }, 10000));
+    }
 
-            // Reset reasoning steps
-            ['step2', 'step3', 'step4'].forEach(id => {
+    function startTimer() {
+        startTime = Date.now();
+        timerInterval = setInterval(() => {
+            const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+            document.getElementById('elapsedTimer').textContent = elapsed + 's';
+        }, 100);
+    }
+
+    function stopTimer() {
+        clearInterval(timerInterval);
+        stepTimers.forEach(t => clearTimeout(t));
+    }
+
+    function updateMetrics(stepsCount, toolsUsed, processingTime) {
+        sessionQueries++;
+        sessionToolsFired += toolsUsed.length;
+
+        document.getElementById('val-queries').textContent = sessionQueries;
+        document.getElementById('val-tools').textContent = sessionToolsFired;
+        document.getElementById('val-steps').textContent = stepsCount;
+        document.getElementById('val-time').textContent = processingTime + 's';
+
+        ['metric-queries', 'metric-tools', 'metric-steps', 'metric-time'].forEach(id => {
+            const el = document.getElementById(id);
+            el.classList.add('active');
+        });
+    }
+
+    async function submitQuery() {
+        const question = document.getElementById('questionInput').value.trim();
+        if (!question) return;
+
+        // Reset UI
+        document.getElementById('submitBtn').disabled = true;
+        document.getElementById('responsePanel').classList.remove('visible');
+        document.getElementById('errorPanel').classList.remove('visible');
+        document.getElementById('reasoningPanel').classList.add('visible');
+        resetToolRegistry();
+
+        startReasoningAnimation();
+        startTimer();
+
+        try {
+            const res = await fetch(`${API}/agent`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question })
+            });
+
+            if (!res.ok) throw new Error(`API error: ${res.status}`);
+            const data = await res.json();
+
+            stopTimer();
+
+            // Mark all steps done
+            ['rs1','rs2','rs3','rs4'].forEach(id => {
+                document.getElementById(id).classList.add('done');
                 document.getElementById(id).classList.remove('active');
             });
-            animateSteps();
 
-            try {
-                const res = await fetch(`${API}/agent`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ question })
-                });
-
-                if (!res.ok) throw new Error(`API error: ${res.status}`);
-                const data = await res.json();
-
-                // Populate response
-                document.getElementById('answerText').textContent = data.answer;
-                document.getElementById('stepsCount').textContent = data.steps_taken;
-                document.getElementById('procTime').textContent = `${data.processing_time_seconds}s`;
-
-                const toolsList = document.getElementById('toolsList');
-                toolsList.innerHTML = '';
-                if (data.tools_used.length === 0) {
-                    toolsList.innerHTML = '<span style="font-family:var(--mono);font-size:11px;color:var(--text-dim);">No tools required</span>';
-                } else {
-                    data.tools_used.forEach(tool => {
-                        const badge = document.createElement('div');
-                        badge.className = 'tool-used-badge';
-                        badge.textContent = tool;
-                        toolsList.appendChild(badge);
-                    });
-                }
-
-                document.getElementById('responsePanel').classList.add('visible');
-
-            } catch(e) {
-                const err = document.getElementById('errorBox');
-                err.textContent = `ERROR: ${e.message}`;
-                err.classList.add('visible');
-            } finally {
-                clearInterval(stepTimer);
-                document.getElementById('submitBtn').disabled = false;
-                document.getElementById('loading').classList.remove('visible');
+            // Animate tool firing
+            if (data.tools_used && data.tools_used.length > 0) {
+                fireToolAnimation(data.tools_used);
             }
+
+            // Populate response
+            document.getElementById('answerText').textContent = data.answer;
+            document.getElementById('respSteps').textContent = data.steps_taken;
+            document.getElementById('respTime').textContent = data.processing_time_seconds + 's';
+
+            const toolsList = document.getElementById('toolsFiredList');
+            toolsList.innerHTML = '';
+            if (!data.tools_used || data.tools_used.length === 0) {
+                toolsList.innerHTML = '<span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);">No external tools required</span>';
+            } else {
+                data.tools_used.forEach(tool => {
+                    const badge = document.createElement('div');
+                    badge.className = 'tool-badge';
+                    badge.textContent = tool;
+                    toolsList.appendChild(badge);
+                });
+            }
+
+            updateMetrics(data.steps_taken, data.tools_used || [], data.processing_time_seconds);
+
+            setTimeout(() => {
+                document.getElementById('reasoningPanel').classList.remove('visible');
+                document.getElementById('responsePanel').classList.add('visible');
+            }, 600);
+
+        } catch(e) {
+            stopTimer();
+            document.getElementById('reasoningPanel').classList.remove('visible');
+            const err = document.getElementById('errorPanel');
+            err.textContent = `AGENT ERROR: ${e.message}`;
+            err.classList.add('visible');
+            resetToolRegistry();
+        } finally {
+            document.getElementById('submitBtn').disabled = false;
         }
-    </script>
+    }
+</script>
+
 </body>
 </html>
