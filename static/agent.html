@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Industrial AI Copilot</title>
+    <title>Industrial AI Copilot — Agent</title>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -12,6 +12,7 @@
             --border: #1e2d3d;
             --accent: #e87c34;
             --accent2: #4fc3f7;
+            --accent3: #a78bfa;
             --text: #cdd6e0;
             --text-dim: #4a6072;
             --success: #43d98c;
@@ -31,14 +32,13 @@
             overflow-x: hidden;
         }
 
-        /* Grid background */
         body::before {
             content: '';
             position: fixed;
             inset: 0;
             background-image:
-                linear-gradient(rgba(78,195,247,0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(78,195,247,0.03) 1px, transparent 1px);
+                linear-gradient(rgba(167,139,250,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(167,139,250,0.03) 1px, transparent 1px);
             background-size: 40px 40px;
             pointer-events: none;
             z-index: 0;
@@ -52,16 +52,15 @@
             z-index: 1;
         }
 
-        /* Header */
         header {
-            margin-bottom: 48px;
+            margin-bottom: 40px;
             animation: fadeDown 0.6s ease both;
         }
 
         .header-tag {
             font-family: var(--mono);
             font-size: 11px;
-            color: var(--accent);
+            color: var(--accent3);
             letter-spacing: 3px;
             text-transform: uppercase;
             margin-bottom: 12px;
@@ -75,18 +74,37 @@
             margin-bottom: 8px;
         }
 
-        h1 span {
-            color: var(--accent);
-        }
+        h1 span { color: var(--accent3); }
 
         .subtitle {
             font-size: 14px;
             color: var(--text-dim);
             font-weight: 300;
-            letter-spacing: 0.5px;
         }
 
-        /* Status bar */
+        .nav-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 32px;
+            animation: fadeDown 0.6s 0.1s ease both;
+        }
+
+        .nav-btn {
+            font-family: var(--mono);
+            font-size: 12px;
+            padding: 8px 16px;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .nav-btn:hover { border-color: var(--accent2); color: var(--accent2); transform: none; }
+        .nav-btn.active { border-color: var(--accent3); color: var(--accent3); background: rgba(167,139,250,0.08); }
+
         .status-bar {
             display: flex;
             align-items: center;
@@ -94,27 +112,25 @@
             padding: 12px 16px;
             background: var(--panel);
             border: 1px solid var(--border);
-            border-left: 3px solid var(--success);
+            border-left: 3px solid var(--accent3);
             margin-bottom: 32px;
             font-family: var(--mono);
             font-size: 12px;
-            animation: fadeDown 0.6s 0.1s ease both;
+            animation: fadeDown 0.6s 0.15s ease both;
         }
 
         .status-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: var(--success);
-            box-shadow: 0 0 8px var(--success);
+            background: var(--accent3);
+            box-shadow: 0 0 8px var(--accent3);
             animation: pulse 2s infinite;
         }
 
-        .status-text { color: var(--success); }
-        .status-meta { color: var(--text-dim); margin-left: auto; }
+        .status-text { color: var(--accent3); }
 
-        /* Documents indexed */
-        .docs-row {
+        .tools-bar {
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
@@ -122,7 +138,7 @@
             animation: fadeDown 0.6s 0.2s ease both;
         }
 
-        .doc-chip {
+        .tool-chip {
             font-family: var(--mono);
             font-size: 11px;
             padding: 4px 10px;
@@ -131,21 +147,25 @@
             background: var(--panel);
         }
 
-        .doc-chip.active { border-color: var(--accent2); color: var(--accent2); }
+        .tool-chip.active {
+            border-color: var(--accent3);
+            color: var(--accent3);
+            background: rgba(167,139,250,0.08);
+            box-shadow: 0 0 8px rgba(167,139,250,0.2);
+        }
 
-        /* Query panel */
         .query-panel {
             background: var(--panel);
             border: 1px solid var(--border);
             padding: 24px;
             margin-bottom: 24px;
-            animation: fadeDown 0.6s 0.3s ease both;
+            animation: fadeDown 0.6s 0.25s ease both;
         }
 
         .panel-label {
             font-family: var(--mono);
             font-size: 11px;
-            color: var(--accent);
+            color: var(--accent3);
             letter-spacing: 2px;
             margin-bottom: 16px;
         }
@@ -164,17 +184,17 @@
             font-size: 15px;
             padding: 14px 16px;
             resize: none;
-            height: 80px;
+            height: 100px;
             outline: none;
             transition: border-color 0.2s;
             line-height: 1.5;
         }
 
-        textarea:focus { border-color: var(--accent2); }
+        textarea:focus { border-color: var(--accent3); }
         textarea::placeholder { color: var(--text-dim); }
 
         button {
-            background: var(--accent);
+            background: var(--accent3);
             color: #000;
             border: none;
             padding: 0 28px;
@@ -188,11 +208,10 @@
             align-self: stretch;
         }
 
-        button:hover { background: #ff9d52; transform: translateY(-1px); }
+        button:hover { background: #c4b5fd; transform: translateY(-1px); }
         button:active { transform: translateY(0); }
         button:disabled { background: var(--text-dim); cursor: not-allowed; transform: none; }
 
-        /* Example queries */
         .examples {
             margin-top: 12px;
             display: flex;
@@ -213,13 +232,63 @@
         }
 
         .example-btn:hover {
-            border-color: var(--accent2);
-            color: var(--accent2);
+            border-color: var(--accent3);
+            color: var(--accent3);
             transform: none;
             background: transparent;
         }
 
-        /* Response panel */
+        .loading {
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            padding: 24px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            margin-bottom: 24px;
+        }
+
+        .loading.visible { display: flex; }
+
+        .loading-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-family: var(--mono);
+            font-size: 13px;
+            color: var(--accent3);
+        }
+
+        .loader {
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent3);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .reasoning-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .reasoning-step {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-dim);
+            padding: 4px 0;
+            border-left: 2px solid var(--border);
+            padding-left: 12px;
+            animation: fadeIn 0.3s ease both;
+        }
+
+        .reasoning-step.active {
+            color: var(--accent3);
+            border-left-color: var(--accent3);
+        }
+
         .response-panel {
             background: var(--panel);
             border: 1px solid var(--border);
@@ -239,21 +308,20 @@
             border-bottom: 1px solid var(--border);
         }
 
-        .confidence-badge {
-            font-family: var(--mono);
-            font-size: 11px;
-            padding: 4px 12px;
-            letter-spacing: 1px;
+        .meta-row {
+            display: flex;
+            gap: 16px;
+            align-items: center;
         }
 
-        .confidence-badge.High { background: rgba(67,217,140,0.15); color: var(--success); border: 1px solid var(--success); }
-        .confidence-badge.Medium { background: rgba(240,192,64,0.15); color: var(--warning); border: 1px solid var(--warning); }
-        .confidence-badge.Low { background: rgba(224,92,92,0.15); color: var(--danger); border: 1px solid var(--danger); }
-
-        .processing-time {
+        .meta-item {
             font-family: var(--mono);
             font-size: 11px;
             color: var(--text-dim);
+        }
+
+        .meta-item span {
+            color: var(--accent3);
         }
 
         .answer-text {
@@ -264,58 +332,36 @@
             white-space: pre-wrap;
         }
 
-        .sources-section { margin-bottom: 16px; }
+        .tools-used-section {
+            margin-bottom: 16px;
+            padding: 16px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+        }
 
-        .sources-label {
+        .tools-used-label {
             font-family: var(--mono);
             font-size: 11px;
-            color: var(--accent);
+            color: var(--accent3);
             letter-spacing: 2px;
             margin-bottom: 10px;
         }
 
-        .source-item {
+        .tools-used-list {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .tool-used-badge {
             font-family: var(--mono);
-            font-size: 12px;
-            color: var(--text-dim);
-            padding: 6px 10px;
-            border-left: 2px solid var(--accent2);
-            margin-bottom: 4px;
-            background: rgba(79,195,247,0.04);
+            font-size: 11px;
+            padding: 4px 12px;
+            border: 1px solid var(--accent3);
+            color: var(--accent3);
+            background: rgba(167,139,250,0.08);
         }
 
-        .caveat-box {
-            font-family: var(--mono);
-            font-size: 12px;
-            color: var(--warning);
-            padding: 10px 14px;
-            border: 1px solid rgba(240,192,64,0.3);
-            background: rgba(240,192,64,0.05);
-        }
-
-        /* Loading state */
-        .loading {
-            display: none;
-            align-items: center;
-            gap: 12px;
-            padding: 24px;
-            font-family: var(--mono);
-            font-size: 13px;
-            color: var(--accent2);
-        }
-
-        .loading.visible { display: flex; }
-
-        .loader {
-            width: 16px;
-            height: 16px;
-            border: 2px solid var(--border);
-            border-top-color: var(--accent2);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-
-        /* Error state */
         .error-box {
             display: none;
             padding: 16px;
@@ -324,11 +370,11 @@
             color: var(--danger);
             font-family: var(--mono);
             font-size: 13px;
+            margin-bottom: 24px;
         }
 
         .error-box.visible { display: block; }
 
-        /* Animations */
         @keyframes fadeDown {
             from { opacity: 0; transform: translateY(-12px); }
             to { opacity: 1; transform: translateY(0); }
@@ -337,6 +383,11 @@
         @keyframes fadeUp {
             from { opacity: 0; transform: translateY(12px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         @keyframes pulse {
@@ -352,86 +403,84 @@
 <body>
     <div class="container">
         <header>
-            <div class="header-tag">// Industrial AI Copilot v1.0</div>
-            <h1>Engineering <span>Knowledge</span><br>At Your Command</h1>
-            <p class="subtitle">Hybrid retrieval + reranking over industrial engineering documentation — manuals, safety standards, compliance specs, maintenance guides</p>
+            <div class="header-tag">// Industrial AI Copilot v2.0 — Agentic Layer</div>
+            <h1>Autonomous <span>Reasoning</span><br>Engine</h1>
+            <p class="subtitle">LangGraph agent with tool use — retrieval, calculation, spec checking, unit conversion</p>
         </header>
-        <div class="nav-bar" style="display:flex;gap:12px;margin-bottom:32px;">
-            <a href="/ui" style="font-family:var(--mono);font-size:12px;padding:8px 16px;border:1px solid var(--accent);color:var(--accent);background:rgba(232,124,52,0.08);text-decoration:none;">// RAG Search</a>
-            <a href="/agent-ui" style="font-family:var(--mono);font-size:12px;padding:8px 16px;border:1px solid var(--border);color:var(--text-dim);text-decoration:none;">// Agent Mode</a>
+
+        <div class="nav-bar">
+            <a href="/ui" class="nav-btn">// RAG Search</a>
+            <a href="/agent-ui" class="nav-btn active">// Agent Mode</a>
         </div>
+
         <div class="status-bar">
             <div class="status-dot"></div>
-            <span class="status-text">SYSTEM OPERATIONAL</span>
-            <span class="status-meta" id="docCount">Loading documents...</span>
+            <span class="status-text">AGENT OPERATIONAL</span>
+            <span style="font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-left:auto;">4 TOOLS ACTIVE</span>
         </div>
 
-        <div class="docs-row" id="docsRow"></div>
+        <div class="tools-bar">
+            <div class="tool-chip active">⚙ search_industrial_documentation</div>
+            <div class="tool-chip active">🔢 engineering_calculator</div>
+            <div class="tool-chip active">📐 unit_converter</div>
+            <div class="tool-chip active">✅ spec_checker</div>
+        </div>
 
         <div class="query-panel">
-            <div class="panel-label">// QUERY INPUT</div>
+            <div class="panel-label">// AGENT QUERY</div>
             <div class="input-row">
-                <textarea 
-                    id="questionInput" 
-                    placeholder="Ask anything about your industrial documentation..."
+                <textarea
+                    id="questionInput"
+                    placeholder="Describe a complex engineering problem — the agent will reason through it step by step..."
                     onkeydown="handleKey(event)"
                 ></textarea>
                 <button id="submitBtn" onclick="submitQuery()">EXECUTE</button>
             </div>
             <div class="examples">
                 <span style="font-family:var(--mono);font-size:11px;color:var(--text-dim);align-self:center;">TRY:</span>
-                <button class="example-btn" onclick="setQuery(this.textContent)">Gear pump loses suction?</button>
-                <button class="example-btn" onclick="setQuery(this.textContent)">Advantages of ISO certification?</button>
-                <button class="example-btn" onclick="setQuery(this.textContent)">PPE for petroleum handling?</button>
-                <button class="example-btn" onclick="setQuery(this.textContent)">Preventive maintenance intervals?</button>
+                <button class="example-btn" onclick="setQuery(this.textContent)">Pump pressure 450 psi vs spec 380 psi — dangerous?</button>
+                <button class="example-btn" onclick="setQuery(this.textContent)">Convert 150 psi to bar and check if safe</button>
+                <button class="example-btn" onclick="setQuery(this.textContent)">Gear pump loses suction — diagnose and recommend</button>
+                <button class="example-btn" onclick="setQuery(this.textContent)">What PPE is needed for petroleum handling?</button>
             </div>
         </div>
 
         <div class="loading" id="loading">
-            <div class="loader"></div>
-            <span>Processing query through retrieval pipeline...</span>
+            <div class="loading-header">
+                <div class="loader"></div>
+                <span>Agent reasoning through your query...</span>
+            </div>
+            <div class="reasoning-steps" id="reasoningSteps">
+                <div class="reasoning-step active">→ Analyzing query intent</div>
+                <div class="reasoning-step" id="step2">→ Selecting tools</div>
+                <div class="reasoning-step" id="step3">→ Executing tool calls</div>
+                <div class="reasoning-step" id="step4">→ Synthesizing response</div>
+            </div>
         </div>
 
         <div class="error-box" id="errorBox"></div>
 
         <div class="response-panel" id="responsePanel">
             <div class="response-header">
-                <div class="panel-label">// RESPONSE</div>
-                <div style="display:flex;gap:12px;align-items:center;">
-                    <span class="processing-time" id="procTime"></span>
-                    <span class="confidence-badge" id="confidenceBadge"></span>
+                <div class="panel-label">// AGENT RESPONSE</div>
+                <div class="meta-row">
+                    <div class="meta-item">Steps: <span id="stepsCount">0</span></div>
+                    <div class="meta-item">Time: <span id="procTime">0s</span></div>
                 </div>
             </div>
+
             <div class="answer-text" id="answerText"></div>
-            <div class="sources-section">
-                <div class="sources-label">// SOURCES</div>
-                <div id="sourcesList"></div>
+
+            <div class="tools-used-section">
+                <div class="tools-used-label">// TOOLS USED</div>
+                <div class="tools-used-list" id="toolsList"></div>
             </div>
-            <div class="caveat-box" id="caveatBox" style="display:none;"></div>
         </div>
     </div>
 
     <script>
         const API = window.location.origin;
-
-        // Load documents on startup
-        async function loadDocs() {
-            try {
-                const res = await fetch(`${API}/documents`);
-                const data = await res.json();
-                document.getElementById('docCount').textContent = 
-                    `${data.total} DOCUMENTS INDEXED`;
-                const row = document.getElementById('docsRow');
-                data.indexed_documents.forEach((doc, i) => {
-                    const chip = document.createElement('div');
-                    chip.className = 'doc-chip active';
-                    chip.textContent = doc;
-                    row.appendChild(chip);
-                });
-            } catch(e) {
-                document.getElementById('docCount').textContent = 'API CONNECTING...';
-            }
-        }
+        let stepTimer = null;
 
         function setQuery(text) {
             document.getElementById('questionInput').value = text;
@@ -445,6 +494,17 @@
             }
         }
 
+        function animateSteps() {
+            const steps = ['step2', 'step3', 'step4'];
+            let i = 0;
+            stepTimer = setInterval(() => {
+                if (i < steps.length) {
+                    document.getElementById(steps[i]).classList.add('active');
+                    i++;
+                }
+            }, 3000);
+        }
+
         async function submitQuery() {
             const question = document.getElementById('questionInput').value.trim();
             if (!question) return;
@@ -455,8 +515,14 @@
             document.getElementById('responsePanel').classList.remove('visible');
             document.getElementById('errorBox').classList.remove('visible');
 
+            // Reset reasoning steps
+            ['step2', 'step3', 'step4'].forEach(id => {
+                document.getElementById(id).classList.remove('active');
+            });
+            animateSteps();
+
             try {
-                const res = await fetch(`${API}/query`, {
+                const res = await fetch(`${API}/agent`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ question })
@@ -467,29 +533,20 @@
 
                 // Populate response
                 document.getElementById('answerText').textContent = data.answer;
+                document.getElementById('stepsCount').textContent = data.steps_taken;
+                document.getElementById('procTime').textContent = `${data.processing_time_seconds}s`;
 
-                const badge = document.getElementById('confidenceBadge');
-                badge.textContent = data.confidence.toUpperCase();
-                badge.className = `confidence-badge ${data.confidence}`;
-
-                document.getElementById('procTime').textContent = 
-                    `${data.processing_time_seconds}s`;
-
-                const sourcesList = document.getElementById('sourcesList');
-                sourcesList.innerHTML = '';
-                data.sources.forEach(src => {
-                    const div = document.createElement('div');
-                    div.className = 'source-item';
-                    div.textContent = src;
-                    sourcesList.appendChild(div);
-                });
-
-                const caveat = document.getElementById('caveatBox');
-                if (data.caveat) {
-                    caveat.textContent = `⚠ ${data.caveat}`;
-                    caveat.style.display = 'block';
+                const toolsList = document.getElementById('toolsList');
+                toolsList.innerHTML = '';
+                if (data.tools_used.length === 0) {
+                    toolsList.innerHTML = '<span style="font-family:var(--mono);font-size:11px;color:var(--text-dim);">No tools required</span>';
                 } else {
-                    caveat.style.display = 'none';
+                    data.tools_used.forEach(tool => {
+                        const badge = document.createElement('div');
+                        badge.className = 'tool-used-badge';
+                        badge.textContent = tool;
+                        toolsList.appendChild(badge);
+                    });
                 }
 
                 document.getElementById('responsePanel').classList.add('visible');
@@ -499,12 +556,11 @@
                 err.textContent = `ERROR: ${e.message}`;
                 err.classList.add('visible');
             } finally {
+                clearInterval(stepTimer);
                 document.getElementById('submitBtn').disabled = false;
                 document.getElementById('loading').classList.remove('visible');
             }
         }
-
-        loadDocs();
     </script>
 </body>
 </html>

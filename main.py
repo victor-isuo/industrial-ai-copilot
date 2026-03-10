@@ -84,6 +84,9 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 async def frontend():
     return FileResponse("static/index.html")
 
+@app.get("/agent-ui")
+async def agent_frontend():
+    return FileResponse("static/agent.html")
 
 # --- Request/Response Models ---
 class QueryRequest(BaseModel):
