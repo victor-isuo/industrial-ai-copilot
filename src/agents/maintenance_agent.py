@@ -181,9 +181,9 @@ def test_agent():
     agent = MaintenanceAgent(pipeline=pipeline)
 
     test_queries = [
-        #"What should I do if a gear pump loses suction?",
+        "What should I do if a gear pump loses suction?",
         "The pump pressure is reading 450 psi but the spec is 380 psi. Is this dangerous?",
-        #"Convert 150 psi to bar and tell me if that's within normal operating range for industrial pumps",
+        "Convert 150 psi to bar and tell me if that's within normal operating range for industrial pumps",
     ]
 
     for query in test_queries:
