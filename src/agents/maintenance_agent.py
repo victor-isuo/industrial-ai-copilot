@@ -9,6 +9,8 @@ from dotenv import load_dotenv
 import operator
 import os
 import logging
+os.environ["LANGCHAIN_TRACING_V2"] = "true"
+os.environ["LANGCHAIN_PROJECT"] = "industrial-ai-copilot"
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
