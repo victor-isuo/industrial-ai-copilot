@@ -133,6 +133,14 @@ industrial-ai-copilot/
 ```
 
 ---
+## Observability
+
+Agent reasoning is fully traced via LangSmith.
+
+![LangSmith Trace](docs/langsmith_trace.jpg)
+
+Every tool call, latency, token usage, and reasoning step 
+is observable and debuggable in production.
 
 ## Local Setup
 

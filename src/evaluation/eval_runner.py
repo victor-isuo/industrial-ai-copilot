@@ -217,4 +217,5 @@ if __name__ == "__main__":
     pipeline = RAGPipeline(retriever=retriever, reranker=reranker)
     agent = MaintenanceAgent(pipeline=pipeline)
 
-    run_evaluation(agent, batch_size=5, delay_seconds=30)
+    EVAL_DATASET = EVAL_DATASET[16:]  # Skip first 12 cases for initial testing
+    run_evaluation(agent, batch_size=5, delay_seconds=45)

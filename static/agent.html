@@ -78,6 +78,41 @@
             100% { transform: translateY(32px); }
         }
 
+        /* Menu button - mobile only */
+        .menu-btn {
+            display: none;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--orange);
+            font-size: 20px;
+            padding: 4px 12px;
+            cursor: pointer;
+            height: auto;
+            min-width: unset;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        .menu-btn:hover {
+            background: var(--orange-glow);
+            border-color: var(--orange-dim);
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Overlay for mobile sidebar */
+        .overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 99;
+            backdrop-filter: blur(2px);
+        }
+
+        .overlay.visible { display: block; }
+
         /* Top danger stripe */
         .hazard-stripe {
             height: 4px;
@@ -94,7 +129,7 @@
 
         .main-layout {
             display: grid;
-            grid-template-columns: 260px 1fr;
+            grid-template-columns: 240px 1fr;
             grid-template-rows: auto 1fr;
             min-height: calc(100vh - 4px);
             position: relative;
@@ -112,7 +147,8 @@
             position: sticky;
             top: 0;
             height: 100vh;
-            overflow: hidden;
+            overflow-y: auto;
+            overflow-x: hidden;
         }
 
         .sidebar-logo {
@@ -406,10 +442,10 @@
         }
 
         .content-area {
-            padding: 24px 28px;
+            padding: 20px 24px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 16px;
             overflow-y: auto;
         }
 
@@ -775,15 +811,16 @@
         .metrics-row {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
+            gap: 10px;
         }
 
         .metric-card {
             background: var(--bg-card);
             border: 1px solid var(--border);
-            padding: 14px 16px;
+            padding: 12px 14px;
             position: relative;
             overflow: hidden;
+            min-width: 0;
         }
 
         .metric-card::after {
@@ -809,7 +846,7 @@
 
         .metric-value {
             font-family: var(--display);
-            font-size: 28px;
+            font-size: clamp(20px, 3vw, 28px);
             letter-spacing: 2px;
             color: var(--text-bright);
             line-height: 1;
@@ -828,10 +865,30 @@
                 grid-template-columns: 1fr;
             }
             .sidebar {
-                display: none;
+                display: flex;
+                position: fixed;
+                top: 4px;
+                left: 0;
+                bottom: 0;
+                z-index: 100;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                width: 260px;
+                overflow-y: auto;
+                height: auto;
+            }
+            .sidebar.open {
+                transform: translateX(0);
+                box-shadow: 4px 0 30px rgba(0,0,0,0.6);
             }
             .metrics-row {
                 grid-template-columns: repeat(2, 1fr);
+            }
+            .menu-btn {
+                display: flex;
+            }
+            .top-bar-sub {
+                display: none;
             }
         }
     </style>
@@ -839,6 +896,7 @@
 <body>
 
 <div class="hazard-stripe"></div>
+<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
 
 <div class="main-layout">
 
@@ -936,6 +994,7 @@
 
         <div class="top-bar">
             <div class="top-bar-left">
+                <button class="menu-btn" id="menuBtn" onclick="toggleSidebar()">☰</button>
                 <div class="mode-badge">AGENT MODE</div>
                 <div class="top-bar-divider"></div>
                 <div class="top-bar-sub">LANGGRAPH · AUTONOMOUS TOOL ORCHESTRATION · MULTI-STEP REASONING</div>
@@ -963,9 +1022,9 @@
                     <div class="metric-unit">total calls</div>
                 </div>
                 <div class="metric-card" id="metric-steps">
-                    <div class="metric-label">LAST STEPS</div>
+                    <div class="metric-label">TOOL CALLS</div>
                     <div class="metric-value" id="val-steps">—</div>
-                    <div class="metric-unit">reasoning chain</div>
+                    <div class="metric-unit">last query</div>
                 </div>
                 <div class="metric-card" id="metric-time">
                     <div class="metric-label">LAST LATENCY</div>
@@ -1042,7 +1101,7 @@
                     <span class="response-label">// AGENT RESPONSE — COMPLETE</span>
                     <div class="response-meta">
                         <div class="meta-chip">
-                            <span class="meta-chip-label">STEPS</span>
+                            <span class="meta-chip-label">TOOLS</span>
                             <span class="meta-chip-value" id="respSteps">—</span>
                         </div>
                         <div class="meta-chip">
@@ -1071,6 +1130,14 @@
     let timerInterval = null;
     let startTime = null;
     let stepTimers = [];
+
+    function toggleSidebar() {
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.getElementById('overlay');
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('visible');
+        document.body.style.overflow = sidebar.classList.contains('open') ? 'hidden' : '';
+    }
 
     const TOOL_IDS = {
         'search_industrial_documentation': 'tool-search',
@@ -1153,13 +1220,13 @@
         stepTimers.forEach(t => clearTimeout(t));
     }
 
-    function updateMetrics(stepsCount, toolsUsed, processingTime) {
+    function updateMetrics(toolsUsed, processingTime) {
         sessionQueries++;
         sessionToolsFired += toolsUsed.length;
 
         document.getElementById('val-queries').textContent = sessionQueries;
         document.getElementById('val-tools').textContent = sessionToolsFired;
-        document.getElementById('val-steps').textContent = stepsCount;
+        document.getElementById('val-steps').textContent = toolsUsed.length;
         document.getElementById('val-time').textContent = processingTime + 's';
 
         ['metric-queries', 'metric-tools', 'metric-steps', 'metric-time'].forEach(id => {
@@ -1207,7 +1274,7 @@
 
             // Populate response
             document.getElementById('answerText').textContent = data.answer;
-            document.getElementById('respSteps').textContent = data.steps_taken;
+            document.getElementById('respSteps').textContent = data.tools_used ? data.tools_used.length : 0;
             document.getElementById('respTime').textContent = data.processing_time_seconds + 's';
 
             const toolsList = document.getElementById('toolsFiredList');
@@ -1223,7 +1290,7 @@
                 });
             }
 
-            updateMetrics(data.steps_taken, data.tools_used || [], data.processing_time_seconds);
+            updateMetrics(data.tools_used || [], data.processing_time_seconds);
 
             setTimeout(() => {
                 document.getElementById('reasoningPanel').classList.remove('visible');
@@ -1245,3 +1312,15 @@
 
 </body>
 </html>
+```
+
+Now push it:
+
+```bash
+git add static/agent.html
+git commit -m "feat: redesign agent UI — industrial dashboard with live metrics"
+git push space main --force
+git push origin main
+```
+
+Tell me when it's live and send a screenshot.

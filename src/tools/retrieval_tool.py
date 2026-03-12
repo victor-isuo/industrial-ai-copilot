@@ -29,15 +29,16 @@ def create_retrieval_tool(pipeline):
         try:
             response = pipeline.query(query)
 
-            # Format results for agent consumption
-            result = f"ANSWER: {response.answer}\n\n"
-            result += f"CONFIDENCE: {response.confidence}\n\n"
-            result += "SOURCES:\n"
-            for source in response.sources:
+            # Truncate answer to prevent token overflow
+            answer = response.answer[:800] if len(response.answer) > 800 else response.answer
+            result += "SOURCES — YOU MUST CITE THESE IN YOUR RESPONSE:\n"
+            for source in list(response.sources)[:3]:
                 result += f"  - {source}\n"
+            result += "\nIMPORTANT: Always cite sources in your final response including document name AND page number.\n"
+            result += "Format: (Source: [document name], Page [X])\n"
 
             if response.caveat:
-                result += f"\nCAVEAT: {response.caveat}"
+                result += f"\nCAVEAT: {response.caveat[:200]}"
 
             return result
 

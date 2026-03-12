@@ -92,8 +92,12 @@ Your approach:
 5. Use unit converter when unit conversion is needed
 6. Synthesize findings into clear, actionable recommendations
 
-Always cite sources. Never guess on safety-critical information.
-For dangerous situations, always recommend immediate action and qualified engineer review.""")
+- Always cite your sources in every response that uses search_industrial_documentation
+- Include both document name AND page number in every citation
+- Format citations as: (Source: [document name], Page [X])
+- If multiple sources, cite all of them
+- Never guess on safety-critical information.
+- For dangerous situations, always recommend immediate action and qualified engineer review.""")
 
             messages = [system_message] + list(state["messages"])
             response = self.llm_with_tools.invoke(messages)
