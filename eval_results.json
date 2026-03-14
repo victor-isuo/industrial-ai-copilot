@@ -1,214 +1,566 @@
 [
   {
-    "id": "doc_002",
+    "case_id": "spec_001",
+    "category": "spec_check",
+    "query": "Pump pressure reading 450 psi. Spec is 380 psi. Is this dangerous?",
+    "answer": "SPEC CHECK RESULT: OUT OF SPEC\nParameter: pump pressure\nMeasured Value: 450.0 psi\nSpecification: 380.0 psi\nAcceptable Range: 342.0 - 418.0 psi\nDeviation: 70.0 psi (18.4%)\nSeverity: WARNING\n\nACTION REQUIRED: pump pressure is 18.4% above specification. Urgent inspection recommended. Monitor closely and reduce load if possible.",
+    "tools_used": [
+      "spec_checker"
+    ],
+    "steps_taken": 4,
+    "latency_seconds": 2.56,
+    "scores": {
+      "tool_score": 1.0,
+      "keyword_score": 1.0,
+      "severity_score": 1.0,
+      "composite_score": 1.0
+    },
+    "timestamp": "2026-03-14T07:28:55.024949",
+    "status": "pass"
+  },
+  {
+    "case_id": "spec_002",
+    "category": "spec_check",
+    "query": "Vibration reading is 2.8 mm/s. ISO spec allows 2.3 mm/s maximum.",
+    "answer": "SPEC CHECK RESULT: OUT OF SPEC\nParameter: vibration\nMeasured Value: 2.8 mm/s\nSpecification: 2.3 mm/s\nAcceptable Range: 2.07 - 2.53 mm/s\nDeviation: 0.5 mm/s (21.7%)\nSeverity: CRITICAL\n\nACTION REQUIRED: vibration is 21.7% above specification. IMMEDIATE shutdown and inspection required. Do not continue operation.",
+    "tools_used": [
+      "spec_checker"
+    ],
+    "steps_taken": 4,
+    "latency_seconds": 1.52,
+    "scores": {
+      "tool_score": 1.0,
+      "keyword_score": 1.0,
+      "severity_score": 0.0,
+      "composite_score": 0.8
+    },
+    "timestamp": "2026-03-14T07:29:06.734656",
+    "status": "pass"
+  },
+  {
+    "case_id": "spec_003",
+    "category": "spec_check",
+    "query": "Motor temperature is 95 degrees celsius. Rated maximum is 80 degrees.",
+    "answer": "SPEC CHECK RESULT: OUT OF SPEC\nParameter: Motor temperature\nMeasured Value: 95.0 degrees celsius\nSpecification: 80.0 degrees celsius\nAcceptable Range: 72.0 - 88.0 degrees celsius\nDeviation: 15.0 degrees celsius (18.8%)\nSeverity: WARNING\n\nACTION REQUIRED: Motor temperature is 18.8% above specification. Urgent inspection recommended. Monitor closely and reduce load if possible.",
+    "tools_used": [
+      "spec_checker"
+    ],
+    "steps_taken": 4,
+    "latency_seconds": 1.76,
+    "scores": {
+      "tool_score": 1.0,
+      "keyword_score": 0.667,
+      "severity_score": 1.0,
+      "composite_score": 0.867
+    },
+    "timestamp": "2026-03-14T07:29:18.518494",
+    "status": "pass"
+  },
+  {
+    "case_id": "spec_004",
+    "category": "spec_check",
+    "query": "Flow rate measured at 120 lpm. Design spec is 150 lpm.",
+    "answer": "SPEC CHECK RESULT: OUT OF SPEC\nParameter: flow rate\nMeasured Value: 120.0 lpm\nSpecification: 150.0 lpm\nAcceptable Range: 135.0 - 165.0 lpm\nDeviation: -30.0 lpm (-20.0%)\nSeverity: WARNING\n\nACTION REQUIRED: flow rate is 20.0% below specification. Urgent inspection recommended. Monitor closely and reduce load if possible.",
+    "tools_used": [
+      "spec_checker"
+    ],
+    "steps_taken": 4,
+    "latency_seconds": 1.67,
+    "scores": {
+      "tool_score": 1.0,
+      "keyword_score": 1.0,
+      "severity_score": 0.0,
+      "composite_score": 0.8
+    },
+    "timestamp": "2026-03-14T07:30:30.204775",
+    "status": "pass"
+  },
+  {
+    "case_id": "spec_005",
+    "category": "spec_check",
+    "query": "Bearing temperature 65 celsius. Max rated temperature is 80 celsius.",
+    "answer": "SPEC CHECK RESULT: WITHIN SPEC\nParameter: temperature\nMeasured Value: 65.0 celsius\nSpecification: 80.0 celsius\nAcceptable Range: 72.0 - 88.0 celsius\nDeviation: -15.0 celsius (-18.8%)\n\nThe bearing temperature is within acceptable limits. Continue monitoring.",
+    "tools_used": [
+      "spec_checker"
+    ],
+    "steps_taken": 4,
+    "latency_seconds": 1.65,
+    "scores": {
+      "tool_score": 1.0,
+      "keyword_score": 0.667,
+      "severity_score": 1.0,
+      "composite_score": 0.867
+    },
+    "timestamp": "2026-03-14T07:30:41.920207",
+    "status": "pass"
+  },
+  {
+    "case_id": "spec_006",
+    "category": "spec_check",
+    "query": "Discharge pressure 600 psi. Safety relief valve set at 500 psi.",
+    "answer": "SPEC CHECK RESULT: OUT OF SPEC\nParameter: discharge pressure\nMeasured Value: 600.0 psi\nSpecification: 500.0 psi\nAcceptable Range: 450.0 - 550.0 psi\nDeviation: 100.0 psi (20.0%)\nSeverity: WARNING\n\nACTION REQUIRED: discharge pressure is 20.0% above specification. Urgent inspection recommended. Monitor closely and reduce load if possible.",
+    "tools_used": [
+      "spec_checker"
+    ],
+    "steps_taken": 4,
+    "latency_seconds": 1.6,
+    "scores": {
+      "tool_score": 1.0,
+      "keyword_score": 0.0,
+      "severity_score": 0.0,
+      "composite_score": 0.4
+    },
+    "timestamp": "2026-03-14T07:30:53.554682",
+    "status": "fail"
+  },
+  {
+    "case_id": "spec_007",
+    "category": "spec_check",
+    "query": "Shaft speed 3200 rpm. Rated speed is 3000 rpm maximum.",
+    "answer": "SPEC CHECK RESULT: WITHIN SPEC\nParameter: shaft speed\nMeasured Value: 3200.0 rpm\nSpecification: 3000.0 rpm\nAcceptable Range: 2700.0 - 3300.0 rpm\nDeviation: 200.0 rpm (6.7%)\nSeverity: NORMAL",
+    "tools_used": [
+      "spec_checker"
+    ],
+    "steps_taken": 4,
+    "latency_seconds": 1.55,
+    "scores": {
+      "tool_score": 1.0,
+      "keyword_score": 0.667,
+      "severity_score": 0.0,
+      "composite_score": 0.667
+    },
+    "timestamp": "2026-03-14T07:32:05.145041",
+    "status": "fail"
+  },
+  {
+    "case_id": "spec_008",
+    "category": "spec_check",
+    "query": "Oil pressure 18 psi. Minimum required pressure is 25 psi.",
+    "answer": "SPEC CHECK RESULT: OUT OF SPEC\nParameter: oil pressure\nMeasured Value: 18.0 psi\nSpecification: 25.0 psi\nAcceptable Range: 22.5 - 27.5 psi\nDeviation: -7.0 psi (-28.0%)\nSeverity: CRITICAL\n\nACTION REQUIRED: oil pressure is 28.0% below specification. IMMEDIATE shutdown and inspection required. Do not continue operation.",
+    "tools_used": [
+      "spec_checker"
+    ],
+    "steps_taken": 4,
+    "latency_seconds": 1.58,
+    "scores": {
+      "tool_score": 1.0,
+      "keyword_score": 1.0,
+      "severity_score": 0.0,
+      "composite_score": 0.8
+    },
+    "timestamp": "2026-03-14T07:32:16.746771",
+    "status": "pass"
+  },
+  {
+    "case_id": "spec_009",
+    "category": "spec_check",
+    "query": "Current draw 45 amps. Motor rated at 40 amps full load.",
+    "answer": "SPEC CHECK RESULT: OUT OF SPEC\nParameter: current draw\nMeasured Value: 45.0 amps\nSpecification: 40.0 amps\nAcceptable Range: 36.0 - 44.0 amps\nDeviation: 5.0 amps (12.5%)\nSeverity: WARNING\n\nACTION REQUIRED: current draw is 12.5% above specification. Urgent inspection recommended. Monitor closely and reduce load if possible.",
+    "tools_used": [
+      "spec_checker"
+    ],
+    "steps_taken": 4,
+    "latency_seconds": 1.6,
+    "scores": {
+      "tool_score": 1.0,
+      "keyword_score": 0.667,
+      "severity_score": 0.0,
+      "composite_score": 0.667
+    },
+    "timestamp": "2026-03-14T07:32:28.359065",
+    "status": "fail"
+  },
+  {
+    "case_id": "spec_010",
+    "category": "spec_check",
+    "query": "Tank level at 85%. High level alarm set at 90%.",
+    "answer": "Agent encountered an error: Error code: 400 - {'error': {'message': \"Failed to call a function. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'tool_use_failed', 'failed_generation': 'SPEC CHECK RESULT: WITHIN SPEC\\nParameter: tank level\\nMeasured Value: 85.0 %\\nSpecification: 90.0 %\\nAcceptable Range: 81.0 - 99.0 %\\nDeviation: -5.0 % \\nSeverity: NORMAL\\n\\nThe tank level is within the acceptable range. No immediate action required. (Source: [Industrial Documentation],'}}",
+    "tools_used": [],
+    "steps_taken": 0,
+    "latency_seconds": 2.0,
+    "scores": {
+      "tool_score": 0.0,
+      "keyword_score": 0.667,
+      "severity_score": 1.0,
+      "composite_score": 0.467
+    },
+    "timestamp": "2026-03-14T07:33:40.399355",
+    "status": "fail"
+  },
+  {
+    "case_id": "unit_001",
+    "category": "unit_conversion",
+    "query": "Convert 150 psi to bar",
+    "answer": "The converted value is 10.34 bar.",
+    "tools_used": [
+      "unit_converter"
+    ],
+    "steps_taken": 4,
+    "latency_seconds": 1.26,
+    "scores": {
+      "tool_score": 1.0,
+      "keyword_score": 1.0,
+      "severity_score": 1.0,
+      "composite_score": 1.0
+    },
+    "timestamp": "2026-03-14T07:33:51.836242",
+    "status": "pass"
+  },
+  {
+    "case_id": "unit_002",
+    "category": "unit_conversion",
+    "query": "Convert 100 degrees celsius to fahrenheit",
+    "answer": "The temperature of 100 degrees Celsius is equivalent to 212 degrees Fahrenheit.",
+    "tools_used": [
+      "unit_converter"
+    ],
+    "steps_taken": 4,
+    "latency_seconds": 1.38,
+    "scores": {
+      "tool_score": 1.0,
+      "keyword_score": 1.0,
+      "severity_score": 1.0,
+      "composite_score": 1.0
+    },
+    "timestamp": "2026-03-14T07:34:03.244012",
+    "status": "pass"
+  },
+  {
+    "case_id": "unit_003",
+    "category": "unit_conversion",
+    "query": "Convert 50 gallons per minute to liters per minute",
+    "answer": "50 gallons per minute is equivalent to 189.27 liters per minute.",
+    "tools_used": [
+      "unit_converter"
+    ],
+    "steps_taken": 4,
+    "latency_seconds": 1.55,
+    "scores": {
+      "tool_score": 1.0,
+      "keyword_score": 0.667,
+      "severity_score": 1.0,
+      "composite_score": 0.867
+    },
+    "timestamp": "2026-03-14T07:35:14.836999",
+    "status": "pass"
+  },
+  {
+    "case_id": "unit_004",
+    "category": "unit_conversion",
+    "query": "Convert 75 kilowatts to horsepower",
+    "answer": "100.5765 hp",
+    "tools_used": [
+      "unit_converter"
+    ],
+    "steps_taken": 4,
+    "latency_seconds": 1.31,
+    "scores": {
+      "tool_score": 1.0,
+      "keyword_score": 0.667,
+      "severity_score": 1.0,
+      "composite_score": 0.867
+    },
+    "timestamp": "2026-03-14T07:35:26.186691",
+    "status": "pass"
+  },
+  {
+    "case_id": "unit_005",
+    "category": "unit_conversion",
+    "query": "Convert 500 psi to MPa",
+    "answer": "The converted value is 3.4474 MPa.",
+    "tools_used": [
+      "unit_converter"
+    ],
+    "steps_taken": 4,
+    "latency_seconds": 1.52,
+    "scores": {
+      "tool_score": 1.0,
+      "keyword_score": 1.0,
+      "severity_score": 1.0,
+      "composite_score": 1.0
+    },
+    "timestamp": "2026-03-14T07:35:37.736508",
+    "status": "pass"
+  },
+  {
+    "case_id": "doc_001",
     "category": "retrieval",
-    "query": "What PPE is required when handling petroleum products?",
-    "answer": "When handling petroleum products, the required Personal Protective Equipment (PPE) includes protective gloves, chemical protective clothing, and potentially other gear depending on the specific hazard",
-    "latency": 9.63,
-    "steps": 4,
-    "tool_score": 1.0,
-    "keyword_score": 1.0,
-    "severity_score": 1.0,
-    "overall_score": 1.0,
+    "query": "What should I do if a gear pump loses suction?",
+    "answer": "When troubleshooting a gear pump that loses suction, several potential causes should be considered:\n\n1. **Air leaks in suction or through stuffing box**: This can lead to loss of suction. (Source: GEAR_PUMP_MANUAL.pdf, Page 28)\n\n2. **Suction lift too high**: If the suction lift is too high, the pump may lose suction. (Source: GEAR_PUMP_MANUAL.pdf, Page 28)\n\n3. **Foot valve too small or obstructed**: A foot valve that is too small or obstructed can cause the pump to lose suction. (Source: GEAR_PUMP_MANUAL.pdf, Page 28)\n\n4. **Foot valve or end of suction pipe not immersed deeply enough**: Ensure that the foot valve or the end of the suction pipe is immersed deeply enough to prevent loss of suction. (Source: GEAR_PUMP_MANUAL.pdf, Page 28)\n\nIt is recommended to consult the manufacturer's documentation and a qualified engineer for a thorough diagnosis and repair plan. Immediate action should be taken to prevent further damage and ensure safe operation.",
     "tools_used": [
       "search_industrial_documentation"
     ],
-    "expected_tool": "search_industrial_documentation",
+    "steps_taken": 4,
+    "latency_seconds": 9.61,
+    "scores": {
+      "tool_score": 1.0,
+      "keyword_score": 0.5,
+      "severity_score": 1.0,
+      "composite_score": 0.8
+    },
+    "timestamp": "2026-03-14T07:36:57.427007",
     "status": "pass"
   },
   {
-    "id": "doc_003",
+    "case_id": "doc_002",
+    "category": "retrieval",
+    "query": "What PPE is required when handling petroleum products?",
+    "answer": "When handling petroleum products, the required Personal Protective Equipment (PPE) includes protective gloves and chemical protective clothing. \n\nIt is recommended to use protective gloves at all times, as direct contact with petroleum products may cause allergic reactions. The selection of chemical protective clothing should be performed by an Occupational Hygienist or Safety Professional and may include chemical gloves, boots, chemical apron, chemical suit, and complete facial protection.\n\nThe specific PPE required may depend on various factors, including properties of the chemical, other chemicals that may contact the same PPE, and the task being performed (Source: SDS Used Lubricating Oil, Page 3). \n\nAdditionally, it's essential to consult relevant documentation for detailed information on PPE requirements for handling petroleum products (Source: SDS_Petroleum_Industry_Practices_Feb2009, Page 21). \n\nFor more information, you can refer to the industrial documentation knowledge base (Source: 093168a92d25cc46_pdf_preview_medium.pdf, Page 12).",
+    "tools_used": [
+      "search_industrial_documentation"
+    ],
+    "steps_taken": 4,
+    "latency_seconds": 4.32,
+    "scores": {
+      "tool_score": 1.0,
+      "keyword_score": 1.0,
+      "severity_score": 1.0,
+      "composite_score": 1.0
+    },
+    "timestamp": "2026-03-14T07:37:11.791171",
+    "status": "pass"
+  },
+  {
+    "case_id": "doc_003",
     "category": "retrieval",
     "query": "What are the ISO 9001 quality management requirements?",
-    "answer": "Agent encountered an error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `meta-llama/llama-4-scout-17b-16e-instruct` in organization `org_01kjq65p39fxm9by1exf2b7x7m` service t",
-    "latency": 5.8,
-    "steps": 0,
-    "tool_score": 0.0,
-    "keyword_score": 0.0,
-    "severity_score": 1.0,
-    "overall_score": 0.2,
-    "tools_used": [],
-    "expected_tool": "search_industrial_documentation",
-    "status": "fail"
-  },
-  {
-    "id": "doc_004",
-    "category": "retrieval",
-    "query": "What are the lockout tagout procedures?",
-    "answer": "Agent encountered an error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `meta-llama/llama-4-scout-17b-16e-instruct` in organization `org_01kjq65p39fxm9by1exf2b7x7m` service t",
-    "latency": 0.54,
-    "steps": 0,
-    "tool_score": 0.0,
-    "keyword_score": 0.0,
-    "severity_score": 1.0,
-    "overall_score": 0.2,
-    "tools_used": [],
-    "expected_tool": "search_industrial_documentation",
-    "status": "fail"
-  },
-  {
-    "id": "doc_005",
-    "category": "retrieval",
-    "query": "How do I perform predictive maintenance on rotating equipment?",
-    "answer": "Agent encountered an error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `meta-llama/llama-4-scout-17b-16e-instruct` in organization `org_01kjq65p39fxm9by1exf2b7x7m` service t",
-    "latency": 0.45,
-    "steps": 0,
-    "tool_score": 0.0,
-    "keyword_score": 0.0,
-    "severity_score": 1.0,
-    "overall_score": 0.2,
-    "tools_used": [],
-    "expected_tool": "search_industrial_documentation",
-    "status": "fail"
-  },
-  {
-    "id": "doc_006",
-    "category": "retrieval",
-    "query": "What are the confined space entry requirements?",
-    "answer": "Agent encountered an error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `meta-llama/llama-4-scout-17b-16e-instruct` in organization `org_01kjq65p39fxm9by1exf2b7x7m` service t",
-    "latency": 0.39,
-    "steps": 0,
-    "tool_score": 0.0,
-    "keyword_score": 0.0,
-    "severity_score": 1.0,
-    "overall_score": 0.2,
-    "tools_used": [],
-    "expected_tool": "search_industrial_documentation",
-    "status": "fail"
-  },
-  {
-    "id": "doc_007",
-    "category": "retrieval",
-    "query": "What causes bearing failure in centrifugal pumps?",
-    "answer": "Agent encountered an error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `meta-llama/llama-4-scout-17b-16e-instruct` in organization `org_01kjq65p39fxm9by1exf2b7x7m` service t",
-    "latency": 1.1,
-    "steps": 0,
-    "tool_score": 0.0,
-    "keyword_score": 0.0,
-    "severity_score": 1.0,
-    "overall_score": 0.2,
-    "tools_used": [],
-    "expected_tool": "search_industrial_documentation",
-    "status": "fail"
-  },
-  {
-    "id": "doc_008",
-    "category": "retrieval",
-    "query": "What are the safety requirements for hydraulic systems?",
-    "answer": "Agent encountered an error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `meta-llama/llama-4-scout-17b-16e-instruct` in organization `org_01kjq65p39fxm9by1exf2b7x7m` service t",
-    "latency": 0.63,
-    "steps": 0,
-    "tool_score": 0.0,
-    "keyword_score": 0.0,
-    "severity_score": 1.0,
-    "overall_score": 0.2,
-    "tools_used": [],
-    "expected_tool": "search_industrial_documentation",
-    "status": "fail"
-  },
-  {
-    "id": "doc_009",
-    "category": "retrieval",
-    "query": "How do I read a safety data sheet?",
-    "answer": "Agent encountered an error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `meta-llama/llama-4-scout-17b-16e-instruct` in organization `org_01kjq65p39fxm9by1exf2b7x7m` service t",
-    "latency": 0.42,
-    "steps": 0,
-    "tool_score": 0.0,
-    "keyword_score": 0.0,
-    "severity_score": 1.0,
-    "overall_score": 0.2,
-    "tools_used": [],
-    "expected_tool": "search_industrial_documentation",
-    "status": "fail"
-  },
-  {
-    "id": "doc_010",
-    "category": "retrieval",
-    "query": "What are the ISO 45001 occupational health requirements?",
-    "answer": "Agent encountered an error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `meta-llama/llama-4-scout-17b-16e-instruct` in organization `org_01kjq65p39fxm9by1exf2b7x7m` service t",
-    "latency": 0.41,
-    "steps": 0,
-    "tool_score": 0.0,
-    "keyword_score": 0.0,
-    "severity_score": 1.0,
-    "overall_score": 0.2,
-    "tools_used": [],
-    "expected_tool": "search_industrial_documentation",
-    "status": "fail"
-  },
-  {
-    "id": "edge_001",
-    "category": "edge_case",
-    "query": "The equipment is making a strange noise",
-    "answer": "Agent encountered an error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `meta-llama/llama-4-scout-17b-16e-instruct` in organization `org_01kjq65p39fxm9by1exf2b7x7m` service t",
-    "latency": 0.62,
-    "steps": 0,
-    "tool_score": 0.0,
-    "keyword_score": 0.0,
-    "severity_score": 1.0,
-    "overall_score": 0.2,
-    "tools_used": [],
-    "expected_tool": "search_industrial_documentation",
-    "status": "fail"
-  },
-  {
-    "id": "edge_002",
-    "category": "edge_case",
-    "query": "Convert psi to happiness",
-    "answer": "Agent encountered an error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `meta-llama/llama-4-scout-17b-16e-instruct` in organization `org_01kjq65p39fxm9by1exf2b7x7m` service t",
-    "latency": 1.02,
-    "steps": 0,
-    "tool_score": 0.0,
-    "keyword_score": 0.0,
-    "severity_score": 1.0,
-    "overall_score": 0.2,
-    "tools_used": [],
-    "expected_tool": "unit_converter",
-    "status": "fail"
-  },
-  {
-    "id": "edge_003",
-    "category": "edge_case",
-    "query": "Pump is on fire",
-    "answer": "Agent encountered an error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `meta-llama/llama-4-scout-17b-16e-instruct` in organization `org_01kjq65p39fxm9by1exf2b7x7m` service t",
-    "latency": 0.66,
-    "steps": 0,
-    "tool_score": 0.0,
-    "keyword_score": 0.0,
-    "severity_score": 1.0,
-    "overall_score": 0.2,
-    "tools_used": [],
-    "expected_tool": "search_industrial_documentation",
-    "status": "fail"
-  },
-  {
-    "id": "edge_004",
-    "category": "edge_case",
-    "query": "What is the meaning of life?",
-    "answer": "Agent encountered an error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `meta-llama/llama-4-scout-17b-16e-instruct` in organization `org_01kjq65p39fxm9by1exf2b7x7m` service t",
-    "latency": 0.45,
-    "steps": 0,
-    "tool_score": 1.0,
-    "keyword_score": 0.0,
-    "severity_score": 1.0,
-    "overall_score": 0.6,
-    "tools_used": [],
-    "expected_tool": null,
+    "answer": "ISO 9001 is a Quality Management System (QMS) standard that outlines requirements for a company's quality management system. According to (Source: ISO, EMS, OHSAS.pdf, Page 0), ISO-9001:2000 standards are intended to:\n\n* Improve customer satisfaction\n* Reduce the cost of product\n* Improve process efficiency and effectiveness\n\nThe standard provides a framework for a QMS that can be measured independently of any specific industry or economic sector. It can also be used as a guide to enhance a company's existing QMS according to internationally recognized requirements.\n\nSome key aspects of ISO 9001 quality management requirements include:\n\n* Developing and demonstrating a documented quality system (Source: ISO, EMS, OHSAS.pdf, Page 1)",
+    "tools_used": [
+      "search_industrial_documentation"
+    ],
+    "steps_taken": 4,
+    "latency_seconds": 4.53,
+    "scores": {
+      "tool_score": 1.0,
+      "keyword_score": 1.0,
+      "severity_score": 1.0,
+      "composite_score": 1.0
+    },
+    "timestamp": "2026-03-14T07:37:26.343929",
     "status": "pass"
   },
   {
-    "id": "edge_005",
+    "case_id": "doc_004",
+    "category": "retrieval",
+    "query": "What are the lockout tagout procedures?",
+    "answer": "Lockout/tagout procedures involve several key elements:\n\n1. **Written program**: A written program is required (Source: OSHA-7100-Machine-Guarding-Zoom-Platform-March-2024.pdf, Page 190).\n2. **Written energy control procedures**: These procedures must be in place (Source: OSHA-7100-Machine-Guarding-Zoom-Platform-March-2024.pdf, Page 190).\n3. **Training of employees**: Not just maintenance employees, but all employees involved must receive training (Source: OSHA-7100-Machine-Guarding-Zoom-Platform-March-2024.pdf, Page 190).\n4. **Periodic review of procedures**: Procedures must be reviewed periodically (Source: OSHA-7100-Machine-Guarding-Zoom-Platform-March-2024.pdf, Page 190).\n\nWhen performing lockout/tagout, the following apply:\n\n1. **Lockout preferred**: If capable of being locked out, lockout is preferred over tagout (Source: OSHA-7100-Machine-Guarding-Zoom-Platform-March-2024.pdf, Page 188).\n2. **Tagout allowed**: Tags are allowed if the employer can demonstrate full employee protection (Source: OSHA-7100-Machine-Guarding-Zoom-Platform-March-2024.pdf, Page 188).\n3. **Personal lock or tag**: A personal lock or tag must be used (Source: OSHA-7100-Machine-Guarding-Zoom-Platform-March-2024.pdf, Page 205).",
+    "tools_used": [
+      "search_industrial_documentation"
+    ],
+    "steps_taken": 4,
+    "latency_seconds": 5.21,
+    "scores": {
+      "tool_score": 1.0,
+      "keyword_score": 0.75,
+      "severity_score": 1.0,
+      "composite_score": 0.9
+    },
+    "timestamp": "2026-03-14T07:38:41.584314",
+    "status": "pass"
+  },
+  {
+    "case_id": "doc_005",
+    "category": "retrieval",
+    "query": "How do I perform predictive maintenance on rotating equipment?",
+    "answer": "Predictive maintenance on rotating equipment involves using advanced technologies, such as data analysis, modeling, and performance evaluation, to predict equipment failures before they occur. This approach enables timely intervention and maintenance activities, transitioning from reactive or scheduled maintenance to a more proactive and efficient strategy.\n\nAccording to (Source: Maintenance_Manual_2024_EN.pdf, Page 19), predictive maintenance aims to detect failures during their development phase by analyzing repeated measurements and evaluating known properties and parameters of a unit's degradation. This allows for determining when maintenance is required, such as changing bearings in a unit.\n\nIn the context of rotating equipment, refer to (Source: data\\raw\\110702_1_5.0179885.pdf, Page 12) for more detailed information on implementing predictive maintenance strategies. Additionally, (Source: 2024_Fathi-vanDeVenn_Predictive-maintenance-in-industrial-settings.pdf, Page 0) and (Source: 2024_Fathi-vanDeVenn_Predictive-maintenance-in-industrial-settings.pdf, Page 1) provide further insights into predictive maintenance in industrial settings.",
+    "tools_used": [
+      "search_industrial_documentation"
+    ],
+    "steps_taken": 4,
+    "latency_seconds": 4.87,
+    "scores": {
+      "tool_score": 1.0,
+      "keyword_score": 0.5,
+      "severity_score": 1.0,
+      "composite_score": 0.8
+    },
+    "timestamp": "2026-03-14T07:38:56.518415",
+    "status": "pass"
+  },
+  {
+    "case_id": "doc_006",
+    "category": "retrieval",
+    "query": "What are the confined space entry requirements?",
+    "answer": "Confined space entry requirements include:\n\n1. **Training**: Only employees who have completed Confined Space training may participate in a confined space entry.\n2. **Permit and Hazard Assessment**: Obtain a copy of the entry permit and hazard assessment, review the hazards associated with the space.\n3. **PPE and Equipment**: Ensure that the appropriate PPE, Rescue Retrieval Equipment, and Communications Equipment are available and in good working condition.\n4. **Notification**: Notify the Operations Center (include names and the confined space ID number) and wait for authorization to begin the entry.\n5. **Lockout/Tagout**: Lockout/Tagout any hazardous energy that the entrant could be exposed to.\n6. **Air Monitoring**: Conduct air monitoring to ensure a safe atmosphere.\n\n(Source: Confined Space Entry Permit Reqd.pdf, Page 0)",
+    "tools_used": [
+      "search_industrial_documentation"
+    ],
+    "steps_taken": 4,
+    "latency_seconds": 3.95,
+    "scores": {
+      "tool_score": 1.0,
+      "keyword_score": 1.0,
+      "severity_score": 1.0,
+      "composite_score": 1.0
+    },
+    "timestamp": "2026-03-14T07:39:10.506570",
+    "status": "pass"
+  },
+  {
+    "case_id": "doc_007",
+    "category": "retrieval",
+    "query": "What causes bearing failure in centrifugal pumps?",
+    "answer": "Bearing failure in centrifugal pumps can be caused by several factors. According to (Source: data\\raw\\093168a92d25cc46_pdf_preview_medium.pdf, Page 5), generally:\n\n* 1/3 of bearing failures are due to lubrication problems (wrong lubricant, wrong quantity, wrong lubrication interval)\n* 1/3 of bearing failures are due to contamination (ineffective sealing, internal debris, maintenance)\n* 1/4 of bearing failures are due to application and mounting (too heavy load, incorrect mounting)\n\nThe remaining failures are attributed to other reasons. The figures may vary depending on the industry or application, specifically mentioning the pulp and paper industry.\n\nAdditionally, (Source: data\\raw\\preview-9781420003840_A25098945.pdf, Page 118) provides more insights into bearing failure causes in centrifugal pumps. \n\nIt is recommended to consult the relevant documentation for more detailed information.",
+    "tools_used": [
+      "search_industrial_documentation"
+    ],
+    "steps_taken": 4,
+    "latency_seconds": 4.74,
+    "scores": {
+      "tool_score": 1.0,
+      "keyword_score": 0.75,
+      "severity_score": 1.0,
+      "composite_score": 0.9
+    },
+    "timestamp": "2026-03-14T07:40:25.291197",
+    "status": "pass"
+  },
+  {
+    "case_id": "doc_008",
+    "category": "retrieval",
+    "query": "What are the safety requirements for hydraulic systems?",
+    "answer": "The safety requirements for hydraulic systems can be found in various documents. According to (Source: Nigerian Electricity Health and Safety Standards Manual_08-06-08_Part1.pdf, Page 18), there are specific sections dedicated to hydraulic systems, including \"2(k)(11) Hydraulic Power Tools\" and \"2(k)(13) Machinery Installation\", which likely outline safety requirements.\n\nHowever, a more general standard for occupational health and safety management systems is provided by ISO 45001:2018, which specifies requirements for controlling risks and opportunities related to occupational health and safety (Source: data\\raw\\Chapter14-ISO45001.pdf, Page 0).\n\nAdditionally, (Source: data\\raw\\Chapter14-ISO45001.pdf, Page 2) mentions relevant guidelines for hydraulic systems.\n\nIt is essential to consult these documents for detailed safety requirements and guidelines to ensure the safe operation and maintenance of hydraulic systems.",
+    "tools_used": [
+      "search_industrial_documentation"
+    ],
+    "steps_taken": 4,
+    "latency_seconds": 4.59,
+    "scores": {
+      "tool_score": 1.0,
+      "keyword_score": 0.5,
+      "severity_score": 1.0,
+      "composite_score": 0.8
+    },
+    "timestamp": "2026-03-14T07:40:39.920276",
+    "status": "pass"
+  },
+  {
+    "case_id": "doc_009",
+    "category": "retrieval",
+    "query": "How do I read a safety data sheet?",
+    "answer": "To read a safety data sheet (SDS), follow these steps:\n\n1. **Identification**: Look for the product identifier, manufacturer or supplier information, and emergency contact details.\n2. **Hazards Identification**: Check the section that describes the hazards associated with the product, including potential health, environmental, and physical hazards.\n\nFor more detailed information on reading SDS, refer to the guidelines and standards set forth by regulatory bodies. According to the documentation, you can find more information on reading safety data sheets in (Source: SDS_Petroleum_Industry_Practices_Feb2009.pdf, Page 6) and (Source: 093168a92d25cc46_pdf_preview_medium.pdf, Page 12).",
+    "tools_used": [
+      "search_industrial_documentation"
+    ],
+    "steps_taken": 4,
+    "latency_seconds": 5.51,
+    "scores": {
+      "tool_score": 1.0,
+      "keyword_score": 0.75,
+      "severity_score": 1.0,
+      "composite_score": 0.9
+    },
+    "timestamp": "2026-03-14T07:40:55.452496",
+    "status": "pass"
+  },
+  {
+    "case_id": "doc_010",
+    "category": "retrieval",
+    "query": "What are the ISO 45001 occupational health requirements?",
+    "answer": "ISO 45001 is an occupational health and safety management system (OHSMS) standard that specifies requirements for an organization to effectively control its risks and opportunities related to health and safety. The standard focuses on prioritizing people's physical, mental, and cognitive health and safety through risk prevention, innovation, and continual improvement (Source: Chapter14-ISO45001.pdf, Page 1).\n\nSome key aspects of ISO 45001 include:\n- Leadership and empowerment, allowing leaders to demonstrate commitment to safe and healthy workplaces (Source: au-iso-45001-brochure-web.pdf, Page 1).\n- Requirements for an OHSMS, which enables an organization to understand how OH&S is managed across the business (Source: Chapter14-ISO45001.pdf, Page 2; Source: au-iso-45001-brochure-web.pdf, Page 0).\n\nFor precise occupational health requirements, the standard ISO 45001:2018 \"Occupational health and safety management systems \u2014 Requirements\" provides detailed information (Source: Chapter14-ISO45001.pdf, Page 16).",
+    "tools_used": [
+      "search_industrial_documentation"
+    ],
+    "steps_taken": 4,
+    "latency_seconds": 4.24,
+    "scores": {
+      "tool_score": 1.0,
+      "keyword_score": 1.0,
+      "severity_score": 1.0,
+      "composite_score": 1.0
+    },
+    "timestamp": "2026-03-14T07:42:09.719405",
+    "status": "pass"
+  },
+  {
+    "case_id": "edge_001",
+    "category": "edge_case",
+    "query": "The equipment is making a strange noise",
+    "answer": "When investigating strange noises in equipment, several factors and potential causes should be considered:\n\n1. **Ultrasonic Noise and Bearing Failure**: An increase of 10-12dB in ultrasonic noise can indicate bearing failure before changes in temperature or vibration are detectable (Source: NP_7502_Electric Motor Predictive and Preventive Maintenance Guide.pdf, Page 94). This suggests that using ultrasound testing could be beneficial in predicting bearing failure.\n\n2. **Standby Equipment Noise**: For equipment that is not operational for extended periods, depressions in the raceway(s) that match the distance between the rolling elements can lead to noise. This issue can be addressed by periodically rotating the shaft of standby machinery to minimize the effects of vibration (Source: 09).\n\nIt's essential to consult the equipment's documentation and consider various potential causes for the strange noise. If the issue persists or poses a risk, it's recommended to consult a qualified engineer for further evaluation and guidance.\n\nAdditionally, you may want to search for more information on equipment noise troubleshooting or consult other relevant documentation for specific guidance on your equipment. \n\n(Source: NP_7502_Electric Motor Predictive and Preventive Maintenance Guide.pdf, Page 94)",
+    "tools_used": [
+      "search_industrial_documentation"
+    ],
+    "steps_taken": 4,
+    "latency_seconds": 4.79,
+    "scores": {
+      "tool_score": 1.0,
+      "keyword_score": 0.5,
+      "severity_score": 1.0,
+      "composite_score": 0.8
+    },
+    "timestamp": "2026-03-14T07:42:24.550004",
+    "status": "pass"
+  },
+  {
+    "case_id": "edge_002",
+    "category": "edge_case",
+    "query": "Convert psi to happiness",
+    "answer": "I don't have access to a unit conversion tool that can convert psi (pounds per square inch) to \"happiness\" as it's not a standard unit of measurement. Psi is a unit of pressure, while happiness is a subjective emotional state. If you meant to convert psi to another unit of pressure or measurement, I'd be happy to help with that. \n\nPlease let me know if you have a specific conversion in mind, such as converting psi to bar, kpa, or another unit. I'll do my best to assist you. \n\nIf you are looking for information on how to measure or quantify happiness, that would be a different topic and might involve searching for information on psychology or social sciences. \n\nIn any case, I'll wait for your clarification on what you're trying to achieve.",
+    "tools_used": [],
+    "steps_taken": 2,
+    "latency_seconds": 1.09,
+    "scores": {
+      "tool_score": 0.0,
+      "keyword_score": 0.0,
+      "severity_score": 1.0,
+      "composite_score": 0.2
+    },
+    "timestamp": "2026-03-14T07:42:35.675329",
+    "status": "fail"
+  },
+  {
+    "case_id": "edge_003",
+    "category": "edge_case",
+    "query": "Pump is on fire",
+    "answer": "In the event of a pump fire, immediate action is crucial to ensure safety. \n\nFirst, restrict access to the area to prevent further risk. Ensure that only authorized personnel are in the vicinity.\n\nNext, be aware that the pump can start unexpectedly, so be prepared for this possibility.\n\nIt is also essential to maintain the pump properly, as failure to do so can lead to injury or fire.\n\nFor specific guidance on handling a pump fire, I recommend consulting the industrial documentation knowledge base.\n\n(Source: GEAR_PUMP_MANUAL.pdf, Page 4) \n(Source: 2880549_Horizontal-Centrifugal-Pumps_Word.pdf, Page 3) \n(Source: 2880549_Horizontal-Centrifugal-Pumps_Word.pdf, Page 4)",
+    "tools_used": [
+      "search_industrial_documentation"
+    ],
+    "steps_taken": 4,
+    "latency_seconds": 4.92,
+    "scores": {
+      "tool_score": 1.0,
+      "keyword_score": 0.5,
+      "severity_score": 1.0,
+      "composite_score": 0.8
+    },
+    "timestamp": "2026-03-14T07:43:50.671588",
+    "status": "pass"
+  },
+  {
+    "case_id": "edge_004",
+    "category": "edge_case",
+    "query": "What is the meaning of life?",
+    "answer": "The meaning of life is a philosophical question that has been debated by many thinkers, theologians, and scientists for centuries. It's a complex and subjective topic that can have different answers depending on one's perspective, beliefs, and values.\n\nAs an industrial maintenance engineer AI assistant, I don't have a direct answer to this question, as it falls outside the scope of my industrial/engineering expertise. I'm here to provide information and assistance on topics related to equipment, safety, procedures, and maintenance.\n\nIf you'd like to discuss topics related to industrial maintenance or engineering, I'd be happy to help. However, for questions about the meaning of life, I recommend consulting philosophers, theologians, or experts in fields like psychology, sociology, or spirituality.",
+    "tools_used": [],
+    "steps_taken": 2,
+    "latency_seconds": 1.56,
+    "scores": {
+      "tool_score": 1.0,
+      "keyword_score": 0.75,
+      "severity_score": 1.0,
+      "composite_score": 0.9
+    },
+    "timestamp": "2026-03-14T07:44:02.293375",
+    "status": "pass"
+  },
+  {
+    "case_id": "edge_005",
     "category": "edge_case",
     "query": "Pressure reading 450 psi but I don't know what the spec is",
-    "answer": "Agent encountered an error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `meta-llama/llama-4-scout-17b-16e-instruct` in organization `org_01kjq65p39fxm9by1exf2b7x7m` service t",
-    "latency": 0.74,
-    "steps": 0,
-    "tool_score": 0.0,
-    "keyword_score": 0.0,
-    "severity_score": 1.0,
-    "overall_score": 0.2,
-    "tools_used": [],
-    "expected_tool": "search_industrial_documentation",
-    "status": "fail"
+    "answer": "The pressure reading of 450 psi is significantly higher than typical operating pressures for standard industrial equipment. For example, the Quincy QGSV 10-20S equipment has a maximum working pressure of 13 bar, which is approximately 188 psi (Source: Quincy_QGSV_10-20S_Instruction_Manual_, Page 13). \n\nTo better assess the situation, I recommend verifying the specific pressure specifications for your equipment in its manual or documentation. If you're unsure about the equipment or the pressure reading, it's best to consult a qualified engineer or the equipment manufacturer for guidance.\n\nWould you like to search for the specific equipment documentation to find its pressure specification?",
+    "tools_used": [
+      "search_industrial_documentation"
+    ],
+    "steps_taken": 4,
+    "latency_seconds": 4.35,
+    "scores": {
+      "tool_score": 1.0,
+      "keyword_score": 0.75,
+      "severity_score": 1.0,
+      "composite_score": 0.9
+    },
+    "timestamp": "2026-03-14T07:44:16.675939",
+    "status": "pass"
   }
 ]

@@ -8,11 +8,11 @@
     <style>
         :root {
             --bg-deep: #060810;
-            --bg-panel: #0c1018;
+            --bg-panel: #0e1a2a;
             --bg-card: #111826;
             --bg-input: #080c12;
             --border: #1a2535;
-            --border-bright: #253347;
+            --border-bright: #304a6a;
             --orange: #f07020;
             --orange-dim: #a84e16;
             --orange-glow: rgba(240,112,32,0.15);
@@ -25,8 +25,8 @@
             --yellow: #ffd740;
             --red: #ff4444;
             --text-bright: #e8f0f8;
-            --text-mid: #8aa0b8;
-            --text-dim: #3a4e62;
+            --text-mid: #a8bcd0;
+            --text-dim: #4a6070;
             --mono: 'JetBrains Mono', monospace;
             --display: 'Bebas Neue', sans-serif;
             --ui: 'Rajdhani', sans-serif;
@@ -43,7 +43,6 @@
             position: relative;
         }
 
-        /* Animated background grid */
         body::before {
             content: '';
             position: fixed;
@@ -57,7 +56,6 @@
             z-index: 0;
         }
 
-        /* Scan line overlay */
         body::after {
             content: '';
             position: fixed;
@@ -78,42 +76,40 @@
             100% { transform: translateY(32px); }
         }
 
-        /* Menu button - mobile only */
+        /* Mobile menu button */
         .menu-btn {
             display: none;
             background: transparent;
-            border: 1px solid var(--border);
+            border: 1px solid var(--border-bright);
             color: var(--orange);
             font-size: 20px;
             padding: 4px 12px;
             cursor: pointer;
-            height: auto;
-            min-width: unset;
             align-items: center;
             justify-content: center;
             line-height: 1;
+            transition: all 0.2s;
         }
 
         .menu-btn:hover {
             background: var(--orange-glow);
             border-color: var(--orange-dim);
-            transform: none;
-            box-shadow: none;
         }
 
-        /* Overlay for mobile sidebar */
+        /* Overlay — must be BEHIND sidebar (z-index 98 vs sidebar 100) */
         .overlay {
             display: none;
             position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.7);
-            z-index: 99;
-            backdrop-filter: blur(2px);
+            top: 0;
+            left: 270px;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.15);
+            z-index: 98;
         }
 
         .overlay.visible { display: block; }
 
-        /* Top danger stripe */
         .hazard-stripe {
             height: 4px;
             background: repeating-linear-gradient(
@@ -139,8 +135,8 @@
         /* ─── SIDEBAR ─── */
         .sidebar {
             grid-row: 1 / 3;
-            background: var(--bg-panel);
-            border-right: 1px solid var(--border);
+            background: #111826;
+            border-right: 1px solid rgba(255,255,255,0.1);
             display: flex;
             flex-direction: column;
             padding: 0;
@@ -149,11 +145,13 @@
             height: 100vh;
             overflow-y: auto;
             overflow-x: hidden;
+            z-index: 100;
+            opacity: 1;
         }
 
         .sidebar-logo {
             padding: 24px 20px 20px;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid rgba(255,255,255,0.07);
         }
 
         .logo-tag {
@@ -178,21 +176,20 @@
         .logo-sub {
             font-family: var(--mono);
             font-size: 9px;
-            color: var(--text-dim);
+            color: var(--text-mid);
             letter-spacing: 1px;
             margin-top: 4px;
         }
 
-        /* System status */
         .sys-status {
             padding: 16px 20px;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid rgba(255,255,255,0.07);
         }
 
         .status-title {
             font-family: var(--mono);
             font-size: 9px;
-            color: var(--text-dim);
+            color: var(--text-mid);
             letter-spacing: 2px;
             margin-bottom: 10px;
         }
@@ -201,7 +198,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
 
         .status-indicator {
@@ -225,7 +222,7 @@
         .status-label {
             font-family: var(--mono);
             font-size: 10px;
-            color: var(--text-mid);
+            color: var(--text-bright);
             flex: 1;
         }
 
@@ -233,6 +230,7 @@
             font-family: var(--mono);
             font-size: 10px;
             color: var(--green);
+            font-weight: 500;
         }
 
         @keyframes blink {
@@ -240,16 +238,15 @@
             50% { opacity: 0.3; }
         }
 
-        /* Nav */
         .nav-section {
             padding: 16px 20px;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid rgba(255,255,255,0.07);
         }
 
         .nav-label {
             font-family: var(--mono);
             font-size: 9px;
-            color: var(--text-dim);
+            color: var(--text-mid);
             letter-spacing: 2px;
             margin-bottom: 8px;
         }
@@ -267,8 +264,8 @@
         }
 
         .nav-item:hover {
-            background: var(--bg-card);
-            border-color: var(--border);
+            background: rgba(255,255,255,0.05);
+            border-color: var(--border-bright);
         }
 
         .nav-item.active {
@@ -291,8 +288,8 @@
         }
 
         .nav-item.active .nav-text { color: var(--orange); }
+        .nav-item:hover .nav-text { color: var(--text-bright); }
 
-        /* Tools panel */
         .tools-section {
             padding: 16px 20px;
             flex: 1;
@@ -301,7 +298,7 @@
         .tools-label {
             font-family: var(--mono);
             font-size: 9px;
-            color: var(--text-dim);
+            color: var(--text-mid);
             letter-spacing: 2px;
             margin-bottom: 10px;
         }
@@ -312,8 +309,8 @@
             gap: 8px;
             padding: 8px 10px;
             margin-bottom: 4px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
             transition: all 0.3s;
         }
 
@@ -340,7 +337,7 @@
         .tool-name {
             font-family: var(--mono);
             font-size: 10px;
-            color: var(--text-dim);
+            color: var(--text-mid);
             flex: 1;
         }
 
@@ -354,23 +351,22 @@
 
         .tool-item.firing .tool-status { color: var(--cyan); }
 
-        /* Knowledge base stats */
         .kb-section {
             padding: 16px 20px;
-            border-top: 1px solid var(--border);
+            border-top: 1px solid rgba(255,255,255,0.07);
         }
 
         .kb-stat {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
 
         .kb-label {
             font-family: var(--mono);
             font-size: 9px;
-            color: var(--text-dim);
+            color: var(--text-mid);
         }
 
         .kb-value {
@@ -380,11 +376,11 @@
             font-weight: 500;
         }
 
-        /* ─── MAIN CONTENT ─── */
+        /* ─── TOP BAR ─── */
         .top-bar {
             padding: 16px 28px;
-            background: var(--bg-panel);
-            border-bottom: 1px solid var(--border);
+            background: #111826;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -412,7 +408,7 @@
         .top-bar-sub {
             font-family: var(--mono);
             font-size: 10px;
-            color: var(--text-dim);
+            color: var(--text-mid);
             letter-spacing: 1px;
         }
 
@@ -441,6 +437,7 @@
             animation: blink 1.5s infinite;
         }
 
+        /* ─── CONTENT ─── */
         .content-area {
             padding: 20px 24px;
             display: flex;
@@ -449,10 +446,61 @@
             overflow-y: auto;
         }
 
-        /* Query input section */
+        .metrics-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .metric-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-bright);
+            padding: 12px 14px;
+            position: relative;
+            overflow: hidden;
+            min-width: 0;
+        }
+
+        .metric-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 2px;
+            background: var(--orange);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.5s ease;
+        }
+
+        .metric-card.active::after { transform: scaleX(1); }
+
+        .metric-label {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--text-mid);
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+
+        .metric-value {
+            font-family: var(--display);
+            font-size: clamp(20px, 3vw, 28px);
+            letter-spacing: 2px;
+            color: var(--text-bright);
+            line-height: 1;
+        }
+
+        .metric-unit {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-mid);
+            margin-top: 2px;
+        }
+
+        /* Query section */
         .query-section {
             background: var(--bg-card);
-            border: 1px solid var(--border);
+            border: 1px solid var(--border-bright);
             position: relative;
             overflow: hidden;
         }
@@ -489,7 +537,7 @@
         .query-hint {
             font-family: var(--mono);
             font-size: 9px;
-            color: var(--text-dim);
+            color: var(--text-mid);
         }
 
         .query-body {
@@ -502,7 +550,7 @@
         textarea {
             flex: 1;
             background: var(--bg-input);
-            border: 1px solid var(--border);
+            border: 1px solid var(--border-bright);
             color: var(--text-bright);
             font-family: var(--ui);
             font-size: 15px;
@@ -553,7 +601,6 @@
         .execute-btn:active { transform: translateY(0); }
         .execute-btn:disabled { background: var(--text-dim); cursor: not-allowed; transform: none; box-shadow: none; }
 
-        /* Example queries */
         .examples-row {
             padding: 0 20px 14px;
             display: flex;
@@ -565,7 +612,7 @@
         .ex-label {
             font-family: var(--mono);
             font-size: 9px;
-            color: var(--text-dim);
+            color: var(--text-mid);
             letter-spacing: 1px;
             margin-right: 4px;
         }
@@ -575,28 +622,24 @@
             font-size: 10px;
             padding: 4px 10px;
             background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text-dim);
+            border: 1px solid var(--border-bright);
+            color: var(--text-mid);
             cursor: pointer;
             transition: all 0.2s;
             letter-spacing: 0;
-            height: auto;
-            min-width: unset;
         }
 
         .ex-btn:hover {
             border-color: var(--cyan-dim);
             color: var(--cyan);
             background: var(--cyan-glow);
-            transform: none;
-            box-shadow: none;
         }
 
-        /* Reasoning display */
+        /* Reasoning panel */
         .reasoning-panel {
             display: none;
             background: var(--bg-card);
-            border: 1px solid var(--border);
+            border: 1px solid var(--border-bright);
             overflow: hidden;
         }
 
@@ -607,8 +650,8 @@
             align-items: center;
             gap: 12px;
             padding: 12px 20px;
-            border-bottom: 1px solid var(--border);
-            background: var(--bg-panel);
+            border-bottom: 1px solid rgba(255,255,255,0.07);
+            background: #111826;
         }
 
         .reasoning-spinner {
@@ -634,7 +677,7 @@
         .reasoning-timer {
             font-family: var(--mono);
             font-size: 10px;
-            color: var(--text-dim);
+            color: var(--text-mid);
         }
 
         .reasoning-steps {
@@ -698,7 +741,7 @@
         .response-panel {
             display: none;
             background: var(--bg-card);
-            border: 1px solid var(--border);
+            border: 1px solid var(--border-bright);
             overflow: hidden;
             animation: slideUp 0.4s ease both;
         }
@@ -715,8 +758,8 @@
             align-items: center;
             justify-content: space-between;
             padding: 14px 20px;
-            background: var(--bg-panel);
-            border-bottom: 1px solid var(--border);
+            background: #111826;
+            border-bottom: 1px solid rgba(255,255,255,0.07);
         }
 
         .response-label {
@@ -739,12 +782,10 @@
             font-size: 10px;
         }
 
-        .meta-chip-label { color: var(--text-dim); }
+        .meta-chip-label { color: var(--text-mid); }
         .meta-chip-value { color: var(--cyan); }
 
-        .response-body {
-            padding: 24px 20px;
-        }
+        .response-body { padding: 24px 20px; }
 
         .answer-text {
             font-family: var(--ui);
@@ -756,17 +797,16 @@
             letter-spacing: 0.2px;
         }
 
-        /* Tools used */
         .tools-fired {
             margin-top: 20px;
             padding: 16px 20px;
-            border-top: 1px solid var(--border);
+            border-top: 1px solid var(--border-bright);
         }
 
         .tools-fired-label {
             font-family: var(--mono);
             font-size: 9px;
-            color: var(--text-dim);
+            color: var(--text-mid);
             letter-spacing: 2px;
             margin-bottom: 10px;
         }
@@ -789,12 +829,8 @@
             color: var(--cyan);
         }
 
-        .tool-badge::before {
-            content: '◆';
-            font-size: 7px;
-        }
+        .tool-badge::before { content: '◆'; font-size: 7px; }
 
-        /* Error */
         .error-panel {
             display: none;
             padding: 16px 20px;
@@ -807,65 +843,12 @@
 
         .error-panel.visible { display: block; }
 
-        /* Metrics row */
-        .metrics-row {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-        }
-
-        .metric-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            padding: 12px 14px;
-            position: relative;
-            overflow: hidden;
-            min-width: 0;
-        }
-
-        .metric-card::after {
-            content: '';
-            position: absolute;
-            bottom: 0; left: 0; right: 0;
-            height: 2px;
-            background: var(--orange);
-            transform: scaleX(0);
-            transform-origin: left;
-            transition: transform 0.5s ease;
-        }
-
-        .metric-card.active::after { transform: scaleX(1); }
-
-        .metric-label {
-            font-family: var(--mono);
-            font-size: 9px;
-            color: var(--text-dim);
-            letter-spacing: 1px;
-            margin-bottom: 6px;
-        }
-
-        .metric-value {
-            font-family: var(--display);
-            font-size: clamp(20px, 3vw, 28px);
-            letter-spacing: 2px;
-            color: var(--text-bright);
-            line-height: 1;
-        }
-
-        .metric-unit {
-            font-family: var(--mono);
-            font-size: 10px;
-            color: var(--text-dim);
-            margin-top: 2px;
-        }
-
-        /* Responsive */
+        /* ─── RESPONSIVE ─── */
         @media (max-width: 768px) {
             .main-layout {
                 grid-template-columns: 1fr;
             }
             .sidebar {
-                display: flex;
                 position: fixed;
                 top: 4px;
                 left: 0;
@@ -873,13 +856,14 @@
                 z-index: 100;
                 transform: translateX(-100%);
                 transition: transform 0.3s ease;
-                width: 260px;
-                overflow-y: auto;
+                width: 270px;
                 height: auto;
+                opacity: 1 !important;
+                background: #1c2840 !important;
             }
             .sidebar.open {
                 transform: translateX(0);
-                box-shadow: 4px 0 30px rgba(0,0,0,0.6);
+                box-shadow: none;
             }
             .metrics-row {
                 grid-template-columns: repeat(2, 1fr);
@@ -901,7 +885,7 @@
 <div class="main-layout">
 
     <!-- ─── SIDEBAR ─── -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
         <div class="sidebar-logo">
             <div class="logo-tag">// v2.0 — Agentic</div>
             <div class="logo-title">INDUSTRIAL<br><span>AI</span> COPILOT</div>
@@ -1132,11 +1116,11 @@
     let stepTimers = [];
 
     function toggleSidebar() {
-        const sidebar = document.querySelector('.sidebar');
+        const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('overlay');
-        sidebar.classList.toggle('open');
-        overlay.classList.toggle('visible');
-        document.body.style.overflow = sidebar.classList.contains('open') ? 'hidden' : '';
+        const isOpen = sidebar.classList.toggle('open');
+        overlay.classList.toggle('visible', isOpen);
+        document.body.style.overflow = isOpen ? 'hidden' : '';
     }
 
     const TOOL_IDS = {
@@ -1185,10 +1169,8 @@
     }
 
     function startReasoningAnimation() {
-        const steps = ['rs1', 'rs2', 'rs3', 'rs4'];
-        steps.forEach(id => {
-            const el = document.getElementById(id);
-            el.classList.remove('active', 'done');
+        ['rs1','rs2','rs3','rs4'].forEach(id => {
+            document.getElementById(id).classList.remove('active', 'done');
         });
         document.getElementById('rs1').classList.add('active');
 
@@ -1230,8 +1212,7 @@
         document.getElementById('val-time').textContent = processingTime + 's';
 
         ['metric-queries', 'metric-tools', 'metric-steps', 'metric-time'].forEach(id => {
-            const el = document.getElementById(id);
-            el.classList.add('active');
+            document.getElementById(id).classList.add('active');
         });
     }
 
@@ -1239,7 +1220,6 @@
         const question = document.getElementById('questionInput').value.trim();
         if (!question) return;
 
-        // Reset UI
         document.getElementById('submitBtn').disabled = true;
         document.getElementById('responsePanel').classList.remove('visible');
         document.getElementById('errorPanel').classList.remove('visible');
@@ -1261,18 +1241,15 @@
 
             stopTimer();
 
-            // Mark all steps done
             ['rs1','rs2','rs3','rs4'].forEach(id => {
                 document.getElementById(id).classList.add('done');
                 document.getElementById(id).classList.remove('active');
             });
 
-            // Animate tool firing
             if (data.tools_used && data.tools_used.length > 0) {
                 fireToolAnimation(data.tools_used);
             }
 
-            // Populate response
             document.getElementById('answerText').textContent = data.answer;
             document.getElementById('respSteps').textContent = data.tools_used ? data.tools_used.length : 0;
             document.getElementById('respTime').textContent = data.processing_time_seconds + 's';
@@ -1312,15 +1289,3 @@
 
 </body>
 </html>
-```
-
-Now push it:
-
-```bash
-git add static/agent.html
-git commit -m "feat: redesign agent UI — industrial dashboard with live metrics"
-git push space main --force
-git push origin main
-```
-
-Tell me when it's live and send a screenshot.

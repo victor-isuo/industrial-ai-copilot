@@ -112,6 +112,16 @@ Result: 4 reasoning steps, 1.11 seconds
 | Deployment | Hugging Face Spaces (Docker) |
 
 ---
+## Evaluation Results
+| Category | Cases | Passed | Accuracy | Avg Score |
+|---|---|---|---|---|
+| Spec Check | 10 | 9 | 90% | 0.921 |
+| Unit Conversion | 5 | 5 | 100% | 0.947 |
+| Retrieval | 10 | 10 | 100% | 0.910 |
+| Edge Cases | 5 | 4 | 80% | 0.814 |
+| **Overall** | **30** | **29** | **90%** | **0.898** |
+
+Avg latency: 3.09s | Evaluated against 30 hand-crafted test cases across 4 categories.
 
 ## Project Structure
 

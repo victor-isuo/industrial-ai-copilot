@@ -3,6 +3,12 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Keywords that indicate a hard safety limit — always CRITICAL if exceeded
+SAFETY_KEYWORDS = [
+    "relief", "safety", "shutdown", "trip", "emergency",
+    "maximum allowable", "burst", "rupture", "alarm", "cutoff"
+]
+
 
 @tool
 def spec_checker(
@@ -24,11 +30,11 @@ def spec_checker(
         unit: The unit of measurement (e.g., 'psi', 'bar', 'rpm')
         tolerance_percent: Acceptable deviation percentage (default 10.0)
     """
-    # Cast strings to float
+    # Cast strings to float — Groq passes these as strings
     measured_value = float(measured_value)
     spec_value = float(spec_value)
     tolerance_percent = float(tolerance_percent)
-    
+
     try:
         deviation = measured_value - spec_value
         deviation_percent = (deviation / spec_value) * 100
@@ -39,10 +45,20 @@ def spec_checker(
         status = "WITHIN SPEC" if within_spec else "OUT OF SPEC"
         severity = "NORMAL"
 
+        # Check if parameter name contains safety-critical keywords
+        is_safety_limit = any(
+            kw in parameter_name.lower() for kw in SAFETY_KEYWORDS
+        )
+
         if not within_spec:
-            if abs(deviation_percent) > 25:
+            abs_deviation = abs(deviation_percent)
+
+            if is_safety_limit and deviation > 0:
+                # Exceeding ANY safety limit is always CRITICAL
                 severity = "CRITICAL"
-            elif abs(deviation_percent) > 15:
+            elif abs_deviation > 20:
+                severity = "CRITICAL"
+            elif abs_deviation > 10:
                 severity = "WARNING"
             else:
                 severity = "CAUTION"
@@ -58,7 +74,17 @@ Severity: {severity}
 """
 
         if not within_spec:
-            result += f"\nACTION REQUIRED: {parameter_name} is {round(abs(deviation_percent), 1)}% {'above' if deviation > 0 else 'below'} specification. Immediate inspection recommended."
+            direction = 'above' if deviation > 0 else 'below'
+            result += (
+                f"\nACTION REQUIRED: {parameter_name} is "
+                f"{round(abs(deviation_percent), 1)}% {direction} specification."
+            )
+            if severity == "CRITICAL":
+                result += " IMMEDIATE shutdown and inspection required. Do not continue operation."
+            elif severity == "WARNING":
+                result += " Urgent inspection recommended. Monitor closely and reduce load if possible."
+            elif severity == "CAUTION":
+                result += " Schedule inspection at next available opportunity."
 
         return result.strip()
 

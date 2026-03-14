@@ -5,7 +5,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
 def create_retrieval_tool(pipeline):
     """
     Factory function that creates a retrieval tool bound to the RAG pipeline.
@@ -31,6 +30,10 @@ def create_retrieval_tool(pipeline):
 
             # Truncate answer to prevent token overflow
             answer = response.answer[:800] if len(response.answer) > 800 else response.answer
+
+            # Build result string — must be initialized before use
+            result  = f"ANSWER: {answer}\n\n"
+            result += f"CONFIDENCE: {response.confidence}\n\n"
             result += "SOURCES — YOU MUST CITE THESE IN YOUR RESPONSE:\n"
             for source in list(response.sources)[:3]:
                 result += f"  - {source}\n"

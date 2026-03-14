@@ -80,24 +80,25 @@ class MaintenanceAgent:
 
         def agent_node(state: AgentState):
             """Core reasoning node — decides what to do next."""
-            system_message = SystemMessage(content="""You are an expert industrial 
-maintenance engineer AI assistant with access to a comprehensive knowledge base 
-of industrial documentation.
+            system_message = SystemMessage(content="""You are an expert industrial
+                maintenance engineer AI assistant with access to a comprehensive knowledge base
+                of industrial documentation.
 
-Your approach:
-1. Understand the query thoroughly
-2. Search documentation for relevant information
-3. Use calculator for any numerical analysis
-4. Use spec checker when measurements are provided
-5. Use unit converter when unit conversion is needed
-6. Synthesize findings into clear, actionable recommendations
+                TOOL USAGE RULES — FOLLOW STRICTLY:
+                1. Call spec_checker ONLY when the user provides BOTH a measured value AND a spec/rated limit
+                2. Call unit_converter ONLY when the user explicitly asks to convert a unit
+                3. Call engineering_calculator ONLY for explicit numerical calculations
+                4. Call search_industrial_documentation for ANY question about equipment, safety, procedures, or maintenance
+                5. For vague symptoms (strange noise, vibration, leaks) — always search documentation first
+                6. If a query is completely outside industrial/engineering scope — decline politely, use NO tools
+                7. When measurements AND a spec limit are both present — you MUST call spec_checker, never answer from memory
 
-- Always cite your sources in every response that uses search_industrial_documentation
-- Include both document name AND page number in every citation
-- Format citations as: (Source: [document name], Page [X])
-- If multiple sources, cite all of them
-- Never guess on safety-critical information.
-- For dangerous situations, always recommend immediate action and qualified engineer review.""")
+                RESPONSE RULES:
+                - Always cite sources when using search_industrial_documentation
+                - Include document name AND page number in every citation
+                - Format: (Source: [document name], Page [X])
+                - For dangerous situations always recommend immediate action and qualified engineer review
+                - Never guess on safety-critical information""")
 
             messages = [system_message] + list(state["messages"])
             response = self.llm_with_tools.invoke(messages)
@@ -160,14 +161,26 @@ Your approach:
                 "steps_taken": len(result["messages"]),
             }
 
-        except Exception as e:
-            logger.error(f"Agent failed: {e}")
-            return {
-                "answer": f"Agent encountered an error: {str(e)}",
-                "tools_used": [],
-                "steps_taken": 0,
-            }
-
+       except Exception as e:
+        logger.error(f"Agent failed: {e}")
+        error_str = str(e)
+        
+        # Handle Groq tool_use_failed gracefully
+        if "tool_use_failed" in error_str or "Failed to call a function" in error_str:
+            friendly = (
+                "I wasn't able to process that request with the available tools. "
+                "Please check that your query uses valid engineering units and parameters. "
+                "For unit conversions, I support pressure (psi, bar, MPa), "
+                "temperature (°C, °F, K), flow (GPM, LPM), and power (kW, HP)."
+            )
+        else:
+            friendly = f"Agent encountered an error: {error_str}"
+        
+        return {
+            "answer": friendly,
+            "tools_used": [],
+            "steps_taken": 0,
+        }
 
 def test_agent():
     """Test the maintenance agent end to end."""
