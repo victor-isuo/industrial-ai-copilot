@@ -48,7 +48,7 @@ PDF Loader → Recursive Chunker → ChromaDB + BM25
 ```
 
 **Knowledge Base:**
-- 21 industrial documents
+- 27 industrial documents
 - 1,109 pages
 - 5,091 indexed chunks
 - Equipment manuals, safety standards, maintenance guides, safety datasheets
