@@ -15,18 +15,23 @@ from src.core.retriever import create_hybrid_retriever
 from src.core.reranker import CohereReranker
 from src.core.rag_pipeline import RAGPipeline
 from src.agents.maintenance_agent import MaintenanceAgent
+from src.api.ingest_router import router as ingest_router, set_vector_store
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Global pipeline instance
-pipeline = None
-agent = None
+# Global instances
+pipeline     = None
+agent        = None
+vector_store = None  # Kept globally so ingest router can update it live
+
 
 async def initialize_pipeline():
-    global pipeline
+    global pipeline, agent, vector_store
+
     try:
         logger.info("Initializing pipeline in background...")
-        docs = load_documents()
+        docs   = load_documents()
         chunks = chunk_documents(docs)
 
         if not chunks:
@@ -36,15 +41,18 @@ async def initialize_pipeline():
         logger.info("Building vector store from documents...")
         vector_store = create_vector_store(chunks)
 
+        # Inject vector store into ingest router so uploads update the live index
+        set_vector_store(vector_store)
+
         retriever = create_hybrid_retriever(vector_store, chunks)
-        reranker = CohereReranker(top_n=5)
-        pipeline = RAGPipeline(retriever=retriever, reranker=reranker)
+        reranker  = CohereReranker(top_n=5)
+        pipeline  = RAGPipeline(retriever=retriever, reranker=reranker)
         logger.info("Pipeline ready. System operational.")
-       
+
         # Initialize agent
-        global agent
         agent = MaintenanceAgent(pipeline=pipeline)
         logger.info("Maintenance Agent ready.")
+
     except Exception as e:
         logger.error(f"Pipeline initialization failed: {e}")
 
@@ -65,7 +73,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Industrial AI Copilot",
     description="A modular RAG system for industrial engineering documentation",
-    version="1.0.0",
+    version="3.0.0",
     lifespan=lifespan
 )
 
@@ -77,16 +85,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Register ingestion router — all endpoints under /ingest
+app.include_router(ingest_router)
+
 # Serve frontend
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
 
 @app.get("/ui")
 async def frontend():
     return FileResponse("static/index.html")
 
+
 @app.get("/agent-ui")
 async def agent_frontend():
     return FileResponse("static/agent.html")
+
+
+@app.get("/ingest-ui")
+async def ingest_frontend():
+    return FileResponse("static/ingest.html")
+
 
 # --- Request/Response Models ---
 class QueryRequest(BaseModel):
@@ -108,22 +127,36 @@ class QueryResponse(BaseModel):
     processing_time_seconds: float
 
 
+class AgentRequest(BaseModel):
+    question: str
+
+
+class AgentResponse(BaseModel):
+    answer: str
+    tools_used: list[str]
+    steps_taken: int
+    processing_time_seconds: float
+
+
 # --- Endpoints ---
 @app.get("/")
 async def root():
     return {
-        "name": "Industrial AI Copilot",
-        "version": "1.0.0",
-        "status": "operational",
-        "docs": "/docs"
+        "name":    "Industrial AI Copilot",
+        "version": "3.0.0",
+        "status":  "operational",
+        "docs":    "/docs",
+        "phase":   "Phase 3 — Ingestion Pipeline + Telemetry + Multimodal"
     }
 
 
 @app.get("/health")
 async def health():
     return {
-        "status": "healthy",
-        "pipeline_loaded": pipeline is not None
+        "status":          "healthy",
+        "pipeline_loaded": pipeline is not None,
+        "agent_loaded":    agent is not None,
+        "vector_store":    vector_store is not None,
     }
 
 
@@ -146,9 +179,9 @@ async def query(request: QueryRequest):
         )
 
     try:
-        start = time.time()
+        start    = time.time()
         response = pipeline.query(request.question)
-        elapsed = round(time.time() - start, 2)
+        elapsed  = round(time.time() - start, 2)
 
         return QueryResponse(
             answer=response.answer,
@@ -172,17 +205,9 @@ async def list_documents():
         docs = list(Path(".").glob("*.pdf"))
     return {
         "indexed_documents": [d.name for d in docs],
-        "total": len(docs)
+        "total":             len(docs)
     }
 
-class AgentRequest(BaseModel):
-    question: str
-
-class AgentResponse(BaseModel):
-    answer: str
-    tools_used: list[str]
-    steps_taken: int
-    processing_time_seconds: float
 
 @app.post("/agent", response_model=AgentResponse)
 async def run_agent(request: AgentRequest):
@@ -203,8 +228,8 @@ async def run_agent(request: AgentRequest):
         )
 
     try:
-        start = time.time()
-        result = agent.run(request.question)
+        start   = time.time()
+        result  = agent.run(request.question)
         elapsed = round(time.time() - start, 2)
 
         return AgentResponse(
@@ -217,6 +242,7 @@ async def run_agent(request: AgentRequest):
     except Exception as e:
         logger.error(f"Agent query failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 if __name__ == "__main__":
     import uvicorn

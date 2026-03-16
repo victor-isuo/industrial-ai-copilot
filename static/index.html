@@ -75,15 +75,45 @@
             margin-bottom: 8px;
         }
 
-        h1 span {
-            color: var(--accent);
-        }
+        h1 span { color: var(--accent); }
 
         .subtitle {
             font-size: 14px;
             color: var(--text-dim);
             font-weight: 300;
             letter-spacing: 0.5px;
+        }
+
+        /* Nav bar */
+        .nav-bar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 32px;
+            animation: fadeDown 0.6s 0.05s ease both;
+        }
+
+        .nav-link {
+            font-family: var(--mono);
+            font-size: 12px;
+            padding: 8px 16px;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            text-decoration: none;
+            transition: all 0.2s;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-link:hover {
+            border-color: var(--accent2);
+            color: var(--accent2);
+            background: rgba(79,195,247,0.05);
+        }
+
+        .nav-link.active {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(232,124,52,0.08);
         }
 
         /* Status bar */
@@ -344,22 +374,25 @@
             50% { opacity: 0.4; }
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
     <div class="container">
+
         <header>
             <div class="header-tag">// Industrial AI Copilot v1.0</div>
             <h1>Engineering <span>Knowledge</span><br>At Your Command</h1>
             <p class="subtitle">Hybrid retrieval + reranking over industrial engineering documentation — manuals, safety standards, compliance specs, maintenance guides</p>
         </header>
-        <div class="nav-bar" style="display:flex;gap:12px;margin-bottom:32px;">
-            <a href="/ui" style="font-family:var(--mono);font-size:12px;padding:8px 16px;border:1px solid var(--accent);color:var(--accent);background:rgba(232,124,52,0.08);text-decoration:none;">// RAG Search</a>
-            <a href="/agent-ui" style="font-family:var(--mono);font-size:12px;padding:8px 16px;border:1px solid var(--border);color:var(--text-dim);text-decoration:none;">// Agent Mode</a>
+
+        <!-- Navigation -->
+        <div class="nav-bar">
+            <a href="/ui"         class="nav-link active">// RAG Search</a>
+            <a href="/agent-ui"   class="nav-link">// Agent Mode</a>
+            <a href="/ingest-ui"  class="nav-link">// Knowledge Base</a>
         </div>
+
         <div class="status-bar">
             <div class="status-dot"></div>
             <span class="status-text">SYSTEM OPERATIONAL</span>
@@ -371,8 +404,8 @@
         <div class="query-panel">
             <div class="panel-label">// QUERY INPUT</div>
             <div class="input-row">
-                <textarea 
-                    id="questionInput" 
+                <textarea
+                    id="questionInput"
                     placeholder="Ask anything about your industrial documentation..."
                     onkeydown="handleKey(event)"
                 ></textarea>
@@ -409,20 +442,20 @@
             </div>
             <div class="caveat-box" id="caveatBox" style="display:none;"></div>
         </div>
+
     </div>
 
     <script>
         const API = window.location.origin;
 
-        // Load documents on startup
         async function loadDocs() {
             try {
-                const res = await fetch(`${API}/documents`);
+                const res  = await fetch(`${API}/documents`);
                 const data = await res.json();
-                document.getElementById('docCount').textContent = 
+                document.getElementById('docCount').textContent =
                     `${data.total} DOCUMENTS INDEXED`;
                 const row = document.getElementById('docsRow');
-                data.indexed_documents.forEach((doc, i) => {
+                data.indexed_documents.forEach(doc => {
                     const chip = document.createElement('div');
                     chip.className = 'doc-chip active';
                     chip.textContent = doc;
@@ -449,7 +482,6 @@
             const question = document.getElementById('questionInput').value.trim();
             if (!question) return;
 
-            // UI state: loading
             document.getElementById('submitBtn').disabled = true;
             document.getElementById('loading').classList.add('visible');
             document.getElementById('responsePanel').classList.remove('visible');
@@ -465,14 +497,13 @@
                 if (!res.ok) throw new Error(`API error: ${res.status}`);
                 const data = await res.json();
 
-                // Populate response
                 document.getElementById('answerText').textContent = data.answer;
 
                 const badge = document.getElementById('confidenceBadge');
                 badge.textContent = data.confidence.toUpperCase();
-                badge.className = `confidence-badge ${data.confidence}`;
+                badge.className   = `confidence-badge ${data.confidence}`;
 
-                document.getElementById('procTime').textContent = 
+                document.getElementById('procTime').textContent =
                     `${data.processing_time_seconds}s`;
 
                 const sourcesList = document.getElementById('sourcesList');

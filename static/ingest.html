@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Industrial AI Copilot — Knowledge Base</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #060810;
+            --bg-panel: #111826;
+            --bg-card: #111826;
+            --bg-input: #080c12;
+            --border: #1a2535;
+            --border-bright: #304a6a;
+            --orange: #f07020;
+            --orange-dim: #a84e16;
+            --orange-glow: rgba(240,112,32,0.15);
+            --cyan: #00d4ff;
+            --cyan-dim: #007a94;
+            --cyan-glow: rgba(0,212,255,0.12);
+            --green: #00e676;
+            --green-dim: #007a3d;
+            --green-glow: rgba(0,230,118,0.12);
+            --yellow: #ffd740;
+            --red: #ff4444;
+            --text-bright: #e8f0f8;
+            --text-mid: #a8bcd0;
+            --text-dim: #4a6070;
+            --mono: 'JetBrains Mono', monospace;
+            --display: 'Bebas Neue', sans-serif;
+            --ui: 'Rajdhani', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg-deep);
+            color: var(--text-bright);
+            font-family: var(--ui);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(0,212,255,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,212,255,0.04) 1px, transparent 1px);
+            background-size: 32px 32px;
+            animation: gridShift 20s linear infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg, transparent, transparent 2px,
+                rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px
+            );
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        @keyframes gridShift {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(32px); }
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(0,230,118,0.4); }
+            50% { box-shadow: 0 0 0 6px rgba(0,230,118,0); }
+        }
+
+        /* Menu button */
+        .menu-btn {
+            display: none;
+            background: transparent;
+            border: 1px solid var(--border-bright);
+            color: var(--orange);
+            font-size: 20px;
+            padding: 4px 12px;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            transition: all 0.2s;
+        }
+
+        .menu-btn:hover { background: var(--orange-glow); border-color: var(--orange-dim); }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 270px; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.15);
+            z-index: 98;
+        }
+
+        .overlay.visible { display: block; }
+
+        .hazard-stripe {
+            height: 4px;
+            background: repeating-linear-gradient(
+                90deg, var(--orange) 0px, var(--orange) 20px,
+                var(--bg-deep) 20px, var(--bg-deep) 30px
+            );
+            position: relative;
+            z-index: 10;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            grid-template-rows: auto 1fr;
+            min-height: calc(100vh - 4px);
+            position: relative;
+            z-index: 2;
+        }
+
+        /* ─── SIDEBAR ─── */
+        .sidebar {
+            grid-row: 1 / 3;
+            background: #111826;
+            border-right: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            flex-direction: column;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+            z-index: 100;
+        }
+
+        .sidebar-logo {
+            padding: 24px 20px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.07);
+        }
+
+        .logo-tag { font-family: var(--mono); font-size: 9px; color: var(--orange); letter-spacing: 3px; margin-bottom: 6px; }
+        .logo-title { font-family: var(--display); font-size: 26px; letter-spacing: 2px; color: var(--text-bright); line-height: 1; }
+        .logo-title span { color: var(--orange); }
+        .logo-sub { font-family: var(--mono); font-size: 9px; color: var(--text-mid); letter-spacing: 1px; margin-top: 4px; }
+
+        .sys-status { padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+        .status-title { font-family: var(--mono); font-size: 9px; color: var(--text-mid); letter-spacing: 2px; margin-bottom: 10px; }
+        .status-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .status-indicator { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+        .status-indicator.online { background: var(--green); box-shadow: 0 0 6px var(--green); animation: blink 2s infinite; }
+        .status-label { font-family: var(--mono); font-size: 10px; color: var(--text-bright); flex: 1; }
+        .status-value { font-family: var(--mono); font-size: 10px; color: var(--green); font-weight: 500; }
+
+        .nav-section { padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+        .nav-label { font-family: var(--mono); font-size: 9px; color: var(--text-mid); letter-spacing: 2px; margin-bottom: 8px; }
+        .nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; margin-bottom: 2px; cursor: pointer; transition: all 0.2s; text-decoration: none; border: 1px solid transparent; }
+        .nav-item:hover { background: rgba(255,255,255,0.05); border-color: var(--border-bright); }
+        .nav-item.active { background: var(--orange-glow); border-color: var(--orange-dim); }
+        .nav-icon { font-size: 14px; width: 16px; text-align: center; }
+        .nav-text { font-family: var(--ui); font-size: 13px; font-weight: 600; color: var(--text-mid); letter-spacing: 1px; }
+        .nav-item.active .nav-text { color: var(--orange); }
+        .nav-item:hover .nav-text { color: var(--text-bright); }
+
+        /* KB Stats in sidebar */
+        .kb-section { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.07); margin-top: auto; }
+        .kb-stat { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .kb-label { font-family: var(--mono); font-size: 9px; color: var(--text-mid); }
+        .kb-value { font-family: var(--mono); font-size: 10px; color: var(--orange); font-weight: 500; }
+
+        /* ─── TOP BAR ─── */
+        .top-bar {
+            padding: 16px 28px;
+            background: #111826;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .top-bar-left { display: flex; align-items: center; gap: 16px; }
+        .mode-badge { font-family: var(--display); font-size: 22px; letter-spacing: 3px; color: var(--orange); }
+        .top-bar-divider { width: 1px; height: 20px; background: var(--border-bright); }
+        .top-bar-sub { font-family: var(--mono); font-size: 10px; color: var(--text-mid); letter-spacing: 1px; }
+        .top-bar-right { display: flex; align-items: center; gap: 20px; }
+        .live-indicator { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 10px; color: var(--green); letter-spacing: 1px; }
+        .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: blink 1.5s infinite; }
+
+        /* ─── CONTENT ─── */
+        .content-area {
+            padding: 20px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow-y: auto;
+        }
+
+        /* Stats row */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-bright);
+            padding: 12px 14px;
+            position: relative;
+            overflow: hidden;
+            min-width: 0;
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 2px;
+            background: var(--green);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.5s ease;
+        }
+
+        .stat-card.loaded::after { transform: scaleX(1); }
+        .stat-label { font-family: var(--mono); font-size: 9px; color: var(--text-mid); letter-spacing: 1px; margin-bottom: 6px; }
+        .stat-value { font-family: var(--display); font-size: clamp(20px, 3vw, 28px); letter-spacing: 2px; color: var(--text-bright); line-height: 1; }
+        .stat-unit { font-family: var(--mono); font-size: 10px; color: var(--text-mid); margin-top: 2px; }
+
+        /* Upload zone */
+        .upload-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-bright);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-section::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--green), var(--cyan), var(--green));
+            background-size: 200% 100%;
+            animation: shimmer 3s linear infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .upload-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 20px 0;
+        }
+
+        .upload-label { font-family: var(--mono); font-size: 10px; color: var(--green); letter-spacing: 2px; }
+        .upload-hint { font-family: var(--mono); font-size: 9px; color: var(--text-mid); }
+
+        .drop-zone {
+            margin: 14px 20px;
+            border: 2px dashed var(--border-bright);
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: var(--green);
+            background: var(--green-glow);
+        }
+
+        .drop-zone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+
+        .drop-icon { font-size: 32px; margin-bottom: 12px; display: block; }
+
+        .drop-title {
+            font-family: var(--display);
+            font-size: 20px;
+            letter-spacing: 2px;
+            color: var(--text-bright);
+            margin-bottom: 6px;
+        }
+
+        .drop-sub {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-mid);
+        }
+
+        .upload-btn {
+            display: block;
+            margin: 0 20px 14px;
+            background: var(--green);
+            color: #000;
+            border: none;
+            padding: 14px 24px;
+            font-family: var(--display);
+            font-size: 18px;
+            letter-spacing: 3px;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: calc(100% - 40px);
+        }
+
+        .upload-btn:hover { background: #00ff88; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(0,230,118,0.4); }
+        .upload-btn:disabled { background: var(--text-dim); cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* Selected file display */
+        .selected-file {
+            display: none;
+            margin: 0 20px 14px;
+            padding: 10px 14px;
+            background: var(--green-glow);
+            border: 1px solid var(--green-dim);
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--green);
+            align-items: center;
+            gap: 10px;
+        }
+
+        .selected-file.visible { display: flex; }
+        .selected-file-name { flex: 1; }
+        .selected-file-size { color: var(--text-mid); }
+
+        /* Ingestion progress */
+        .progress-panel {
+            display: none;
+            margin: 0 20px 14px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-bright);
+            overflow: hidden;
+        }
+
+        .progress-panel.visible { display: block; }
+
+        .progress-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border-bright);
+            background: rgba(255,255,255,0.03);
+        }
+
+        .progress-spinner {
+            width: 12px; height: 12px;
+            border: 2px solid var(--border-bright);
+            border-top-color: var(--green);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            flex-shrink: 0;
+        }
+
+        .progress-title { font-family: var(--mono); font-size: 10px; color: var(--green); letter-spacing: 1px; flex: 1; }
+        .progress-job-id { font-family: var(--mono); font-size: 9px; color: var(--text-dim); }
+
+        .progress-steps { padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+
+        .p-step { display: flex; align-items: center; gap: 8px; opacity: 0.3; transition: all 0.3s; }
+        .p-step.active { opacity: 1; }
+        .p-step.done { opacity: 1; }
+
+        .p-step-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--text-dim);
+            flex-shrink: 0;
+        }
+
+        .p-step.active .p-step-dot { background: var(--green); box-shadow: 0 0 6px var(--green); animation: blink 0.5s infinite; }
+        .p-step.done .p-step-dot { background: var(--green); box-shadow: 0 0 4px var(--green); }
+
+        .p-step-text { font-family: var(--mono); font-size: 10px; color: var(--text-dim); flex: 1; }
+        .p-step.active .p-step-text { color: var(--text-bright); }
+        .p-step.done .p-step-text { color: var(--green); }
+        .p-step-check { font-size: 10px; color: var(--green); display: none; }
+        .p-step.done .p-step-check { display: block; }
+
+        /* Result banner */
+        .result-banner {
+            display: none;
+            margin: 0 20px 14px;
+            padding: 12px 16px;
+            font-family: var(--mono);
+            font-size: 11px;
+            border: 1px solid;
+        }
+
+        .result-banner.success {
+            display: flex;
+            background: var(--green-glow);
+            border-color: var(--green-dim);
+            color: var(--green);
+            align-items: center;
+            gap: 10px;
+        }
+
+        .result-banner.error {
+            display: flex;
+            background: rgba(255,68,68,0.08);
+            border-color: rgba(255,68,68,0.3);
+            color: var(--red);
+            align-items: center;
+            gap: 10px;
+        }
+
+        .result-banner.skipped {
+            display: flex;
+            background: var(--orange-glow);
+            border-color: var(--orange-dim);
+            color: var(--orange);
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Document library */
+        .library-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-bright);
+            overflow: hidden;
+            animation: slideUp 0.4s ease both;
+        }
+
+        .library-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 20px;
+            background: rgba(255,255,255,0.02);
+            border-bottom: 1px solid var(--border-bright);
+        }
+
+        .library-title { font-family: var(--mono); font-size: 10px; color: var(--text-mid); letter-spacing: 2px; }
+
+        .refresh-btn {
+            font-family: var(--mono);
+            font-size: 9px;
+            padding: 4px 10px;
+            background: transparent;
+            border: 1px solid var(--border-bright);
+            color: var(--text-mid);
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 1px;
+        }
+
+        .refresh-btn:hover { border-color: var(--cyan-dim); color: var(--cyan); background: var(--cyan-glow); }
+
+        .doc-table { width: 100%; border-collapse: collapse; }
+
+        .doc-table th {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+            padding: 8px 20px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            background: rgba(255,255,255,0.01);
+        }
+
+        .doc-row {
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            transition: background 0.2s;
+        }
+
+        .doc-row:hover { background: rgba(255,255,255,0.03); }
+        .doc-row:last-child { border-bottom: none; }
+
+        .doc-row td {
+            padding: 10px 20px;
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-mid);
+        }
+
+        .doc-name { color: var(--text-bright); }
+        .doc-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            background: var(--green-glow);
+            border: 1px solid var(--green-dim);
+            color: var(--green);
+            font-size: 9px;
+        }
+
+        /* Ingestion history */
+        .history-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-bright);
+            overflow: hidden;
+        }
+
+        .history-empty {
+            padding: 20px;
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-dim);
+            text-align: center;
+        }
+
+        .history-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            font-family: var(--mono);
+            font-size: 10px;
+        }
+
+        .history-row:last-child { border-bottom: none; }
+        .history-status { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .history-status.complete { background: var(--green); box-shadow: 0 0 4px var(--green); }
+        .history-status.failed { background: var(--red); }
+        .history-status.skipped { background: var(--orange); }
+        .history-status.running { background: var(--cyan); animation: blink 0.5s infinite; }
+        .history-filename { color: var(--text-bright); flex: 1; }
+        .history-meta { color: var(--text-dim); font-size: 9px; }
+        .history-chunks { color: var(--cyan); }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .main-layout { grid-template-columns: 1fr; }
+            .sidebar {
+                position: fixed;
+                top: 4px; left: 0; bottom: 0;
+                z-index: 100;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                width: 270px;
+                height: auto;
+                opacity: 1 !important;
+                background: #1c2840 !important;
+            }
+            .sidebar.open { transform: translateX(0); }
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+            .menu-btn { display: flex; }
+            .top-bar-sub { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="hazard-stripe"></div>
+<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+<div class="main-layout">
+
+    <!-- ─── SIDEBAR ─── -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-tag">// v3.0 — Ingestion</div>
+            <div class="logo-title">INDUSTRIAL<br><span>AI</span> COPILOT</div>
+            <div class="logo-sub">KNOWLEDGE BASE MANAGER</div>
+        </div>
+
+        <div class="sys-status">
+            <div class="status-title">// SYSTEM STATUS</div>
+            <div class="status-row">
+                <div class="status-indicator online"></div>
+                <span class="status-label">Ingestion Engine</span>
+                <span class="status-value">READY</span>
+            </div>
+            <div class="status-row">
+                <div class="status-indicator online"></div>
+                <span class="status-label">Vector Store</span>
+                <span class="status-value">ONLINE</span>
+            </div>
+            <div class="status-row">
+                <div class="status-indicator online"></div>
+                <span class="status-label">Embedding Model</span>
+                <span class="status-value">ACTIVE</span>
+            </div>
+            <div class="status-row">
+                <div class="status-indicator online"></div>
+                <span class="status-label">Duplicate Check</span>
+                <span class="status-value">ENABLED</span>
+            </div>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-label">// INTERFACES</div>
+            <a href="/ui" class="nav-item">
+                <span class="nav-icon">⬡</span>
+                <span class="nav-text">RAG SEARCH</span>
+            </a>
+            <a href="/agent-ui" class="nav-item">
+                <span class="nav-icon">◈</span>
+                <span class="nav-text">AGENT MODE</span>
+            </a>
+            <a href="/ingest-ui" class="nav-item active">
+                <span class="nav-icon">⬆</span>
+                <span class="nav-text">KNOWLEDGE BASE</span>
+            </a>
+        </div>
+
+        <div class="kb-section">
+            <div class="status-title">// KNOWLEDGE BASE</div>
+            <div class="kb-stat">
+                <span class="kb-label">Documents</span>
+                <span class="kb-value" id="sb-docs">—</span>
+            </div>
+            <div class="kb-stat">
+                <span class="kb-label">Ingestion Jobs</span>
+                <span class="kb-value" id="sb-jobs">—</span>
+            </div>
+            <div class="kb-stat">
+                <span class="kb-label">Model</span>
+                <span class="kb-value">LLAMA-4</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ─── MAIN ─── -->
+    <div style="display:flex;flex-direction:column;overflow:hidden;">
+
+        <div class="top-bar">
+            <div class="top-bar-left">
+                <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+                <div class="mode-badge">KNOWLEDGE BASE</div>
+                <div class="top-bar-divider"></div>
+                <div class="top-bar-sub">LIVE INGESTION · DUPLICATE DETECTION · VECTOR INDEX UPDATES</div>
+            </div>
+            <div class="top-bar-right">
+                <div class="live-indicator">
+                    <div class="live-dot"></div>
+                    LIVE
+                </div>
+            </div>
+        </div>
+
+        <div class="content-area">
+
+            <!-- Stats -->
+            <div class="stats-row">
+                <div class="stat-card" id="stat-docs">
+                    <div class="stat-label">DOCUMENTS</div>
+                    <div class="stat-value" id="val-docs">—</div>
+                    <div class="stat-unit">indexed</div>
+                </div>
+                <div class="stat-card" id="stat-jobs">
+                    <div class="stat-label">INGESTION JOBS</div>
+                    <div class="stat-value" id="val-jobs">—</div>
+                    <div class="stat-unit">total runs</div>
+                </div>
+                <div class="stat-card" id="stat-chunks">
+                    <div class="stat-label">LAST CHUNKS</div>
+                    <div class="stat-value" id="val-chunks">—</div>
+                    <div class="stat-unit">added</div>
+                </div>
+                <div class="stat-card" id="stat-status">
+                    <div class="stat-label">LAST STATUS</div>
+                    <div class="stat-value" id="val-status" style="font-size:18px;">—</div>
+                    <div class="stat-unit">ingestion</div>
+                </div>
+            </div>
+
+            <!-- Upload zone -->
+            <div class="upload-section">
+                <div class="upload-header">
+                    <span class="upload-label">// DOCUMENT UPLOAD</span>
+                    <span class="upload-hint">PDF only · Max 50MB · Duplicates auto-detected</span>
+                </div>
+
+                <div class="drop-zone" id="dropZone">
+                    <input type="file" id="fileInput" accept=".pdf" onchange="handleFileSelect(event)">
+                    <span class="drop-icon">📄</span>
+                    <div class="drop-title">DROP PDF HERE</div>
+                    <div class="drop-sub">or click to browse files</div>
+                </div>
+
+                <div class="selected-file" id="selectedFile">
+                    <span>📄</span>
+                    <span class="selected-file-name" id="selectedFileName">—</span>
+                    <span class="selected-file-size" id="selectedFileSize">—</span>
+                </div>
+
+                <button class="upload-btn" id="uploadBtn" onclick="uploadDocument()" disabled>
+                    INGEST DOCUMENT
+                </button>
+
+                <!-- Progress -->
+                <div class="progress-panel" id="progressPanel">
+                    <div class="progress-header">
+                        <div class="progress-spinner" id="progressSpinner"></div>
+                        <span class="progress-title">// INGESTION IN PROGRESS</span>
+                        <span class="progress-job-id" id="progressJobId"></span>
+                    </div>
+                    <div class="progress-steps">
+                        <div class="p-step" id="ps-checking">
+                            <div class="p-step-dot"></div>
+                            <span class="p-step-text">Duplicate detection</span>
+                            <span class="p-step-check">✓</span>
+                        </div>
+                        <div class="p-step" id="ps-saving">
+                            <div class="p-step-dot"></div>
+                            <span class="p-step-text">Saving to knowledge base</span>
+                            <span class="p-step-check">✓</span>
+                        </div>
+                        <div class="p-step" id="ps-chunking">
+                            <div class="p-step-dot"></div>
+                            <span class="p-step-text">Chunking document</span>
+                            <span class="p-step-check">✓</span>
+                        </div>
+                        <div class="p-step" id="ps-embedding">
+                            <div class="p-step-dot"></div>
+                            <span class="p-step-text">Embedding and indexing chunks</span>
+                            <span class="p-step-check">✓</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Result -->
+                <div class="result-banner" id="resultBanner"></div>
+            </div>
+
+            <!-- Document Library -->
+            <div class="library-section">
+                <div class="library-header">
+                    <span class="library-title">// DOCUMENT LIBRARY</span>
+                    <button class="refresh-btn" onclick="loadDocuments()">↻ REFRESH</button>
+                </div>
+                <table class="doc-table">
+                    <thead>
+                        <tr>
+                            <th>FILENAME</th>
+                            <th>SIZE</th>
+                            <th>STATUS</th>
+                        </tr>
+                    </thead>
+                    <tbody id="docTableBody">
+                        <tr><td colspan="3" style="padding:20px;text-align:center;font-family:var(--mono);font-size:10px;color:var(--text-dim);">Loading documents...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Ingestion History -->
+            <div class="library-section">
+                <div class="library-header">
+                    <span class="library-title">// INGESTION HISTORY</span>
+                    <button class="refresh-btn" onclick="loadHistory()">↻ REFRESH</button>
+                </div>
+                <div id="historyList">
+                    <div class="history-empty">No ingestion jobs yet this session.</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    const API = window.location.origin;
+    let selectedFile = null;
+    let currentJobId = null;
+    let pollInterval = null;
+
+    // ── Sidebar ───────────────────────────────────────────────
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        const isOpen  = sidebar.classList.toggle('open');
+        overlay.classList.toggle('visible', isOpen);
+        document.body.style.overflow = isOpen ? 'hidden' : '';
+    }
+
+    // ── Drag and drop ─────────────────────────────────────────
+    const dropZone = document.getElementById('dropZone');
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        const file = e.dataTransfer.files[0];
+        if (file) setSelectedFile(file);
+    });
+
+    function handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (file) setSelectedFile(file);
+    }
+
+    function setSelectedFile(file) {
+        if (!file.name.toLowerCase().endsWith('.pdf')) {
+            showResult('error', '✗ Only PDF files are supported.');
+            return;
+        }
+
+        selectedFile = file;
+        const sizeKb = (file.size / 1024).toFixed(1);
+        const sizeMb = (file.size / 1024 / 1024).toFixed(1);
+        const sizeStr = file.size > 1024 * 1024 ? `${sizeMb} MB` : `${sizeKb} KB`;
+
+        document.getElementById('selectedFileName').textContent = file.name;
+        document.getElementById('selectedFileSize').textContent = sizeStr;
+        document.getElementById('selectedFile').classList.add('visible');
+        document.getElementById('uploadBtn').disabled = false;
+
+        // Clear previous results
+        hideResult();
+        resetProgress();
+    }
+
+    // ── Upload ────────────────────────────────────────────────
+    async function uploadDocument() {
+        if (!selectedFile) return;
+
+        document.getElementById('uploadBtn').disabled = true;
+        hideResult();
+        resetProgress();
+        showProgress();
+
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+
+        try {
+            const res = await fetch(`${API}/ingest`, {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.detail || `HTTP ${res.status}`);
+            }
+
+            const data = await res.json();
+            currentJobId = data.job_id;
+            document.getElementById('progressJobId').textContent = `JOB: ${currentJobId}`;
+
+            // Start polling for status
+            pollInterval = setInterval(() => pollStatus(currentJobId), 1500);
+
+        } catch (e) {
+            hideProgress();
+            showResult('error', `✗ Upload failed: ${e.message}`);
+            document.getElementById('uploadBtn').disabled = false;
+        }
+    }
+
+    // ── Status polling ────────────────────────────────────────
+    async function pollStatus(jobId) {
+        try {
+            const res  = await fetch(`${API}/ingest/status/${jobId}`);
+            const data = await res.json();
+
+            updateProgressSteps(data.status);
+
+            if (['complete', 'skipped', 'failed'].includes(data.status)) {
+                clearInterval(pollInterval);
+                hideProgress();
+
+                if (data.status === 'complete') {
+                    showResult('success',
+                        `✓ Successfully indexed ${data.chunks_added} chunks from ${data.pages} pages — ${data.filename}`
+                    );
+                    document.getElementById('val-chunks').textContent = data.chunks_added;
+                    document.getElementById('val-status').textContent = 'DONE';
+                    document.getElementById('stat-status').classList.add('loaded');
+                    loadDocuments();
+                    loadHistory();
+                    loadStats();
+                } else if (data.status === 'skipped') {
+                    showResult('skipped', `⚠ Duplicate detected — ${data.message}`);
+                    document.getElementById('val-status').textContent = 'SKIP';
+                } else {
+                    showResult('error', `✗ Ingestion failed: ${data.message}`);
+                    document.getElementById('val-status').textContent = 'FAIL';
+                }
+
+                document.getElementById('uploadBtn').disabled = false;
+            }
+
+        } catch (e) {
+            console.error('Poll failed:', e);
+        }
+    }
+
+    // Progress step mapping
+    const STATUS_STEPS = {
+        'started':   [],
+        'checking':  ['ps-checking'],
+        'saving':    ['ps-checking', 'ps-saving'],
+        'chunking':  ['ps-checking', 'ps-saving', 'ps-chunking'],
+        'embedding': ['ps-checking', 'ps-saving', 'ps-chunking', 'ps-embedding'],
+        'complete':  ['ps-checking', 'ps-saving', 'ps-chunking', 'ps-embedding'],
+    };
+
+    function updateProgressSteps(status) {
+        const doneSteps = STATUS_STEPS[status] || [];
+        const allSteps  = ['ps-checking', 'ps-saving', 'ps-chunking', 'ps-embedding'];
+
+        allSteps.forEach((id, i) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.remove('active', 'done');
+
+            if (doneSteps.includes(id)) {
+                // Last done step is active, rest are done
+                if (id === doneSteps[doneSteps.length - 1] && status !== 'complete') {
+                    el.classList.add('active');
+                } else {
+                    el.classList.add('done');
+                }
+            }
+        });
+    }
+
+    function showProgress() {
+        document.getElementById('progressPanel').classList.add('visible');
+    }
+
+    function hideProgress() {
+        document.getElementById('progressPanel').classList.remove('visible');
+        // Stop spinner
+        const spinner = document.getElementById('progressSpinner');
+        if (spinner) spinner.style.animation = 'none';
+    }
+
+    function resetProgress() {
+        ['ps-checking','ps-saving','ps-chunking','ps-embedding'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('active', 'done');
+        });
+        const spinner = document.getElementById('progressSpinner');
+        if (spinner) spinner.style.animation = 'spin 0.7s linear infinite';
+    }
+
+    function showResult(type, message) {
+        const banner = document.getElementById('resultBanner');
+        banner.className = `result-banner ${type}`;
+        banner.textContent = message;
+    }
+
+    function hideResult() {
+        const banner = document.getElementById('resultBanner');
+        banner.className = 'result-banner';
+    }
+
+    // ── Document library ──────────────────────────────────────
+    async function loadDocuments() {
+        try {
+            const res  = await fetch(`${API}/ingest/documents`);
+            const data = await res.json();
+
+            const tbody = document.getElementById('docTableBody');
+            tbody.innerHTML = '';
+
+            if (!data.documents || data.documents.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" style="padding:20px;text-align:center;font-family:var(--mono);font-size:10px;color:var(--text-dim);">No documents found in knowledge base.</td></tr>';
+                return;
+            }
+
+            data.documents.forEach(doc => {
+                const tr = document.createElement('tr');
+                tr.className = 'doc-row';
+                const sizeStr = doc.size_kb > 1024
+                    ? `${(doc.size_kb/1024).toFixed(1)} MB`
+                    : `${doc.size_kb} KB`;
+                tr.innerHTML = `
+                    <td class="doc-name">${doc.filename}</td>
+                    <td>${sizeStr}</td>
+                    <td><span class="doc-badge">✓ INDEXED</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('val-docs').textContent = data.total;
+            document.getElementById('sb-docs').textContent = data.total;
+            document.getElementById('stat-docs').classList.add('loaded');
+
+        } catch (e) {
+            console.error('Failed to load documents:', e);
+        }
+    }
+
+    // ── Ingestion history ─────────────────────────────────────
+    async function loadHistory() {
+        try {
+            const res  = await fetch(`${API}/ingest/jobs`);
+            const data = await res.json();
+
+            const list = document.getElementById('historyList');
+
+            if (!data.jobs || data.jobs.length === 0) {
+                list.innerHTML = '<div class="history-empty">No ingestion jobs yet this session.</div>';
+                document.getElementById('val-jobs').textContent = '0';
+                document.getElementById('sb-jobs').textContent = '0';
+                return;
+            }
+
+            list.innerHTML = '';
+            data.jobs.forEach(job => {
+                const div = document.createElement('div');
+                div.className = 'history-row';
+
+                const statusClass = {
+                    complete: 'complete',
+                    failed:   'failed',
+                    skipped:  'skipped',
+                }[job.status] || 'running';
+
+                const chunksStr = job.chunks_added
+                    ? `<span class="history-chunks">${job.chunks_added} chunks</span>`
+                    : '';
+
+                const time = job.started_at
+                    ? new Date(job.started_at).toLocaleTimeString()
+                    : '';
+
+                div.innerHTML = `
+                    <div class="history-status ${statusClass}"></div>
+                    <span class="history-filename">${job.filename || '—'}</span>
+                    ${chunksStr}
+                    <span class="history-meta">${job.job_id} · ${time}</span>
+                `;
+                list.appendChild(div);
+            });
+
+            document.getElementById('val-jobs').textContent = data.total_jobs;
+            document.getElementById('sb-jobs').textContent = data.total_jobs;
+            document.getElementById('stat-jobs').classList.add('loaded');
+
+        } catch (e) {
+            console.error('Failed to load history:', e);
+        }
+    }
+
+    async function loadStats() {
+        await loadDocuments();
+        await loadHistory();
+    }
+
+    // ── Init ──────────────────────────────────────────────────
+    loadDocuments();
+    loadHistory();
+</script>
+
+</body>
+</html>
