@@ -198,15 +198,26 @@ async def query(request: QueryRequest):
 
 @app.get("/documents")
 async def list_documents():
-    """List all indexed documents."""
-    from pathlib import Path
-    docs = list(Path("data/raw").glob("*.pdf"))
-    if not docs:
-        docs = list(Path(".").glob("*.pdf"))
-    return {
-        "indexed_documents": [d.name for d in docs],
-        "total":             len(docs)
-    }
+    """List all indexed documents from vector store metadata."""
+    if not vector_store:
+        return {"indexed_documents": [], "total": 0}
+    try:
+        # Read unique source filenames from ChromaDB metadata
+        result = vector_store.get(include=["metadatas"])
+        sources = set()
+        for metadata in result["metadatas"]:
+            source = metadata.get("source", "")
+            if source:
+                filename = source.split("\\")[-1].split("/")[-1]
+                sources.add(filename)
+        sources = sorted(sources)
+        return {
+            "indexed_documents": sources,
+            "total": len(sources)
+        }
+    except Exception as e:
+        logger.error(f"Failed to list documents: {e}")
+        return {"indexed_documents": [], "total": 0}
 
 
 @app.post("/agent", response_model=AgentResponse)
