@@ -16,6 +16,7 @@ from src.core.reranker import CohereReranker
 from src.core.rag_pipeline import RAGPipeline
 from src.agents.maintenance_agent import MaintenanceAgent
 from src.api.ingest_router import router as ingest_router, set_vector_store
+from src.api.telemetry_api import get_equipment_telemetry as fetch_telemetry, list_equipment
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -198,26 +199,15 @@ async def query(request: QueryRequest):
 
 @app.get("/documents")
 async def list_documents():
-    """List all indexed documents from vector store metadata."""
-    if not vector_store:
-        return {"indexed_documents": [], "total": 0}
-    try:
-        # Read unique source filenames from ChromaDB metadata
-        result = vector_store.get(include=["metadatas"])
-        sources = set()
-        for metadata in result["metadatas"]:
-            source = metadata.get("source", "")
-            if source:
-                filename = source.split("\\")[-1].split("/")[-1]
-                sources.add(filename)
-        sources = sorted(sources)
-        return {
-            "indexed_documents": sources,
-            "total": len(sources)
-        }
-    except Exception as e:
-        logger.error(f"Failed to list documents: {e}")
-        return {"indexed_documents": [], "total": 0}
+    """List all indexed documents."""
+    from pathlib import Path
+    docs = list(Path("data/raw").glob("*.pdf"))
+    if not docs:
+        docs = list(Path(".").glob("*.pdf"))
+    return {
+        "indexed_documents": [d.name for d in docs],
+        "total":             len(docs)
+    }
 
 
 @app.post("/agent", response_model=AgentResponse)
@@ -253,6 +243,30 @@ async def run_agent(request: AgentRequest):
     except Exception as e:
         logger.error(f"Agent query failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/telemetry")
+async def telemetry_overview():
+    """Get health overview of all equipment in the plant."""
+    equipment = list_equipment()
+    return {
+        "equipment":    equipment,
+        "total_assets": len(equipment),
+        "alerts":       sum(e["alert_count"] for e in equipment),
+    }
+
+
+@app.get("/telemetry/{equipment_id}")
+async def telemetry_readings(equipment_id: str):
+    """Get live sensor readings for a specific equipment asset."""
+    data = fetch_telemetry(equipment_id)
+    if not data:
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=404,
+            detail=f"Equipment '{equipment_id}' not found."
+        )
+    return data
 
 
 if __name__ == "__main__":
