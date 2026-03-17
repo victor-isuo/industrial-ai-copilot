@@ -54,39 +54,37 @@ def get_equipment_telemetry(equipment_id: str) -> str:
                 f"Available equipment IDs: {', '.join(available)}"
             )
 
-        # Format response for the agent
-        result  = f"TELEMETRY REPORT — {data['name']} ({data['equipment_id']})\n"
-        result += f"Location: {data['location']}\n"
-        result += f"Timestamp: {data['timestamp']}\n"
-        result += f"Overall Health: {data['overall_health']}\n\n"
+        # Format response for the agent — keep concise to avoid token overflow
+        result  = f"TELEMETRY: {data['name']} ({data['equipment_id']}) — {data['overall_health']}\n"
+        result += f"Location: {data['location']} | Time: {data['timestamp']}\n\n"
 
-        result += "SENSOR READINGS:\n"
+        result += "READINGS:\n"
         for param, reading in data["readings"].items():
             severity = data["severities"][param]
+            flag = " ⚠" if severity in ["WARNING", "CRITICAL"] else ""
             result += (
                 f"  {param.replace('_', ' ').title()}: "
                 f"{reading['value']} {reading['unit']} "
-                f"[Normal: {reading['normal']}] — {severity}\n"
+                f"(Normal: {reading['normal']}) [{severity}]{flag}\n"
             )
 
         if data["alerts"]:
-            result += f"\nACTIVE ALERTS ({len(data['alerts'])}):\n"
+            result += f"\nALERTS:\n"
             for alert in data["alerts"]:
-                result += f"  ⚠ {alert['severity']} — {alert['action']}\n"
+                result += f"  {alert['severity']}: {alert['action']}\n"
         else:
-            result += "\nNo active alerts. All parameters within normal range.\n"
+            result += "\nNo alerts. All parameters normal.\n"
 
         if data.get("active_fault"):
-            fault = data["active_fault"]
+            fault  = data["active_fault"]
             result += (
-                f"\nDEVELOPING FAULT DETECTED:\n"
-                f"  {fault['name']} — {fault['parameter'].replace('_', ' ')} "
-                f"has been drifting for {fault['elapsed_mins']} minutes.\n"
-                f"  Recommend immediate inspection and cross-reference with maintenance documentation.\n"
+                f"\nDEVELOPING FAULT: {fault['name']} — "
+                f"{fault['parameter']} drifting for {fault['elapsed_mins']} mins. "
+                f"Recommend immediate inspection.\n"
             )
 
-        return result
-
+        # Hard truncate to prevent token overflow
+        return result[:1200]
     except Exception as e:
         logger.error(f"Telemetry tool failed: {e}")
         return f"Telemetry retrieval failed: {str(e)}"
