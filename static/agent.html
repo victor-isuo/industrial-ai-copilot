@@ -909,7 +909,7 @@
             <div class="status-row">
                 <div class="status-indicator online"></div>
                 <span class="status-label">Tool Registry</span>
-                <span class="status-value">4 LOADED</span>
+                <span class="status-value">6 LOADED</span>
             </div>
         </div>
 
@@ -949,6 +949,16 @@
             <div class="tool-item" id="tool-spec">
                 <div class="tool-dot"></div>
                 <span class="tool-name">spec_checker</span>
+                <span class="tool-status">IDLE</span>
+            </div>
+            <div class="tool-item" id="tool-telemetry">
+                <div class="tool-dot"></div>
+                <span class="tool-name">get_telemetry</span>
+                <span class="tool-status">IDLE</span>
+            </div>
+            <div class="tool-item" id="tool-equipment">
+                <div class="tool-dot"></div>
+                <span class="tool-name">list_equipment</span>
                 <span class="tool-status">IDLE</span>
             </div>
         </div>
@@ -1039,6 +1049,9 @@
                     <button class="ex-btn" onclick="setQuery(this.textContent)">Gear pump loses suction — diagnose</button>
                     <button class="ex-btn" onclick="setQuery(this.textContent)">PPE requirements for petroleum handling</button>
                     <button class="ex-btn" onclick="setQuery(this.textContent)">Vibration 2.8 mm/s vs ISO spec 2.3 mm/s</button>
+                    <button class="ex-btn" onclick="setQuery(this.textContent)">Check live readings for pump-001</button>
+                    <button class="ex-btn" onclick="setQuery(this.textContent)">What is the health status of all equipment?</button>
+                    <button class="ex-btn" onclick="setQuery(this.textContent)">Diagnose motor-001 using live telemetry</button>
                 </div>
             </div>
 
@@ -1126,9 +1139,11 @@
 
     const TOOL_IDS = {
         'search_industrial_documentation': 'tool-search',
-        'engineering_calculator': 'tool-calc',
-        'unit_converter': 'tool-unit',
-        'spec_checker': 'tool-spec'
+        'engineering_calculator':          'tool-calc',
+        'unit_converter':                  'tool-unit',
+        'spec_checker':                    'tool-spec',
+        'get_equipment_telemetry':         'tool-telemetry',
+        'list_all_equipment':              'tool-equipment',
     };
 
     function setQuery(text) {

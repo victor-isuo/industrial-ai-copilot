@@ -51,6 +51,7 @@ class MaintenanceAgent:
         from src.tools.calculator_tool import engineering_calculator
         from src.tools.unit_converter_tool import unit_converter
         from src.tools.spec_checker_tool import spec_checker
+        from src.tools.telemetry_tool import get_equipment_telemetry, list_all_equipment
 
         retrieval_tool = create_retrieval_tool(pipeline)
 
@@ -59,6 +60,8 @@ class MaintenanceAgent:
             engineering_calculator,
             unit_converter,
             spec_checker,
+            get_equipment_telemetry,
+            list_all_equipment,
         ]
 
         # Bind tools to LLM
@@ -68,7 +71,7 @@ class MaintenanceAgent:
         self.graph = self._build_graph()
         self.conversation_history = []
 
-        logger.info("LangGraph Maintenance Agent initialized with 4 tools")
+        logger.info("LangGraph Maintenance Agent initialized with 6 tools")
 
     def _build_graph(self):
         """
@@ -90,9 +93,12 @@ TOOL USAGE RULES — FOLLOW STRICTLY:
 2. Call unit_converter ONLY when the user explicitly asks to convert a unit
 3. Call engineering_calculator ONLY for explicit numerical calculations
 4. Call search_industrial_documentation for ANY question about equipment, safety, procedures, or maintenance
-5. For vague symptoms (strange noise, vibration, leaks) — always search documentation first
-6. If a query is completely outside industrial/engineering scope — decline politely, use NO tools
-7. When measurements AND a spec limit are both present — you MUST call spec_checker, never answer from memory
+5. Call get_equipment_telemetry when asked about current readings, live status, or equipment health
+6. Call list_all_equipment when asked about overall plant status or available equipment
+7. For vague symptoms (strange noise, vibration, leaks) — search documentation first
+8. For equipment diagnosis — call get_equipment_telemetry FIRST to get live readings, then spec_checker to evaluate them, then search_industrial_documentation for procedures
+9. If a query is completely outside industrial/engineering scope — decline politely, use NO tools
+10. When measurements AND a spec limit are both present — you MUST call spec_checker, never answer from memory
 
 RESPONSE RULES:
 - Always cite sources when using search_industrial_documentation
