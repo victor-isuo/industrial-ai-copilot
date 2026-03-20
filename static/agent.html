@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -61,11 +61,8 @@
             position: fixed;
             inset: 0;
             background: repeating-linear-gradient(
-                0deg,
-                transparent,
-                transparent 2px,
-                rgba(0,0,0,0.08) 2px,
-                rgba(0,0,0,0.08) 4px
+                0deg, transparent, transparent 2px,
+                rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px
             );
             pointer-events: none;
             z-index: 1;
@@ -96,11 +93,20 @@
             border-color: var(--orange-dim);
         }
 
-        /* Overlay — must be BEHIND sidebar (z-index 98 vs sidebar 100) */
+        /*
+         * OVERLAY FIX — starts at left: 270px so it never covers the sidebar.
+         * This is what was blocking nav link taps on mobile.
+         * The sidebar is 270px wide and z-index: 100.
+         * The overlay is z-index: 98 and starts AFTER the sidebar ends.
+         * Result: overlay darkens only the main content, sidebar links are always tappable.
+         */
         .overlay {
             display: none;
             position: fixed;
-            inset: 0;
+            top: 0;
+            left: 270px;
+            right: 0;
+            bottom: 0;
             background: rgba(0,0,0,0.15);
             z-index: 98;
         }
@@ -111,10 +117,8 @@
             height: 4px;
             background: repeating-linear-gradient(
                 90deg,
-                var(--orange) 0px,
-                var(--orange) 20px,
-                var(--bg-deep) 20px,
-                var(--bg-deep) 30px
+                var(--orange) 0px, var(--orange) 20px,
+                var(--bg-deep) 20px, var(--bg-deep) 30px
             );
             position: relative;
             z-index: 10;
@@ -270,11 +274,7 @@
             border-color: var(--orange-dim);
         }
 
-        .nav-icon {
-            font-size: 14px;
-            width: 16px;
-            text-align: center;
-        }
+        .nav-icon { font-size: 14px; width: 16px; text-align: center; }
 
         .nav-text {
             font-family: var(--ui);
@@ -766,10 +766,7 @@
             letter-spacing: 2px;
         }
 
-        .response-meta {
-            display: flex;
-            gap: 20px;
-        }
+        .response-meta { display: flex; gap: 20px; }
 
         .meta-chip {
             display: flex;
@@ -808,11 +805,7 @@
             margin-bottom: 10px;
         }
 
-        .tools-fired-list {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
+        .tools-fired-list { display: flex; gap: 8px; flex-wrap: wrap; }
 
         .tool-badge {
             display: flex;
@@ -842,14 +835,10 @@
 
         /* ─── RESPONSIVE ─── */
         @media (max-width: 768px) {
-            .main-layout {
-                grid-template-columns: 1fr;
-            }
+            .main-layout { grid-template-columns: 1fr; }
             .sidebar {
                 position: fixed;
-                top: 4px;
-                left: 0;
-                bottom: 0;
+                top: 4px; left: 0; bottom: 0;
                 z-index: 100;
                 transform: translateX(-100%);
                 transition: transform 0.3s ease;
@@ -858,19 +847,10 @@
                 opacity: 1 !important;
                 background: #1c2840 !important;
             }
-            .sidebar.open {
-                transform: translateX(0);
-                box-shadow: none;
-            }
-            .metrics-row {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            .menu-btn {
-                display: flex;
-            }
-            .top-bar-sub {
-                display: none;
-            }
+            .sidebar.open { transform: translateX(0); box-shadow: none; }
+            .metrics-row { grid-template-columns: repeat(2, 1fr); }
+            .menu-btn { display: flex; }
+            .top-bar-sub { display: none; }
         }
     </style>
 </head>
@@ -884,7 +864,7 @@
     <!-- ─── SIDEBAR ─── -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-logo">
-            <div class="logo-tag">// v2.0 — Agentic</div>
+            <div class="logo-tag">// v3.0 — Phase 3</div>
             <div class="logo-title">INDUSTRIAL<br><span>AI</span> COPILOT</div>
             <div class="logo-sub">AUTONOMOUS REASONING ENGINE</div>
         </div>
@@ -903,13 +883,13 @@
             </div>
             <div class="status-row">
                 <div class="status-indicator online"></div>
-                <span class="status-label">LLM Gateway</span>
+                <span class="status-label">Telemetry Engine</span>
                 <span class="status-value">ACTIVE</span>
             </div>
             <div class="status-row">
                 <div class="status-indicator online"></div>
                 <span class="status-label">Tool Registry</span>
-                <span class="status-value">6 LOADED</span>
+                <span class="status-value">7 LOADED</span>
             </div>
         </div>
 
@@ -961,13 +941,18 @@
                 <span class="tool-name">list_equipment</span>
                 <span class="tool-status">IDLE</span>
             </div>
+            <div class="tool-item" id="tool-mcp">
+                <div class="tool-dot"></div>
+                <span class="tool-name">mcp_server</span>
+                <span class="tool-status">IDLE</span>
+            </div>
         </div>
 
         <div class="kb-section">
             <div class="tools-label">// KNOWLEDGE BASE</div>
             <div class="kb-stat">
                 <span class="kb-label">Documents</span>
-                <span class="kb-value">21</span>
+                <span class="kb-value">27</span>
             </div>
             <div class="kb-stat">
                 <span class="kb-label">Pages</span>
@@ -978,12 +963,12 @@
                 <span class="kb-value">5,091</span>
             </div>
             <div class="kb-stat">
-                <span class="kb-label">Model</span>
-                <span class="kb-value">LLAMA-4</span>
+                <span class="kb-label">Tools</span>
+                <span class="kb-value">7 ACTIVE</span>
             </div>
             <div class="kb-stat">
-                <span class="kb-label">Tools</span>
-                <span class="kb-value">6 ACTIVE</span>
+                <span class="kb-label">Model</span>
+                <span class="kb-value">LLAMA-4</span>
             </div>
         </div>
     </aside>
@@ -996,7 +981,7 @@
                 <button class="menu-btn" id="menuBtn" onclick="toggleSidebar()">☰</button>
                 <div class="mode-badge">AGENT MODE</div>
                 <div class="top-bar-divider"></div>
-                <div class="top-bar-sub">LANGGRAPH · AUTONOMOUS TOOL ORCHESTRATION · MULTI-STEP REASONING</div>
+                <div class="top-bar-sub">LANGGRAPH · TELEMETRY · TOOL ORCHESTRATION · MULTI-STEP REASONING</div>
             </div>
             <div class="top-bar-right">
                 <div class="live-indicator">
@@ -1056,6 +1041,7 @@
                     <button class="ex-btn" onclick="setQuery(this.textContent)">Check live readings for pump-001</button>
                     <button class="ex-btn" onclick="setQuery(this.textContent)">What is the health status of all equipment?</button>
                     <button class="ex-btn" onclick="setQuery(this.textContent)">Diagnose motor-001 using live telemetry</button>
+                    <button class="ex-btn" onclick="setQuery(this.textContent)">Query pump-001 via MCP protocol</button>
                 </div>
             </div>
 
@@ -1127,16 +1113,16 @@
 
 <script>
     const API = window.location.origin;
-    let sessionQueries = 0;
+    let sessionQueries   = 0;
     let sessionToolsFired = 0;
-    let timerInterval = null;
-    let startTime = null;
-    let stepTimers = [];
+    let timerInterval    = null;
+    let startTime        = null;
+    let stepTimers       = [];
 
     function toggleSidebar() {
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('overlay');
-        const isOpen = sidebar.classList.toggle('open');
+        const isOpen  = sidebar.classList.toggle('open');
         overlay.classList.toggle('visible', isOpen);
         document.body.style.overflow = isOpen ? 'hidden' : '';
     }
@@ -1148,6 +1134,7 @@
         'spec_checker':                    'tool-spec',
         'get_equipment_telemetry':         'tool-telemetry',
         'list_all_equipment':              'tool-equipment',
+        'query_mcp_industrial_server':     'tool-mcp',
     };
 
     function setQuery(text) {
@@ -1226,12 +1213,12 @@
         sessionQueries++;
         sessionToolsFired += toolsUsed.length;
 
-        document.getElementById('val-queries').textContent = sessionQueries;
-        document.getElementById('val-tools').textContent = sessionToolsFired;
-        document.getElementById('val-steps').textContent = toolsUsed.length;
-        document.getElementById('val-time').textContent = processingTime + 's';
+        document.getElementById('val-queries').textContent  = sessionQueries;
+        document.getElementById('val-tools').textContent    = sessionToolsFired;
+        document.getElementById('val-steps').textContent    = toolsUsed.length;
+        document.getElementById('val-time').textContent     = processingTime + 's';
 
-        ['metric-queries', 'metric-tools', 'metric-steps', 'metric-time'].forEach(id => {
+        ['metric-queries','metric-tools','metric-steps','metric-time'].forEach(id => {
             document.getElementById(id).classList.add('active');
         });
     }
@@ -1270,9 +1257,9 @@
                 fireToolAnimation(data.tools_used);
             }
 
-            document.getElementById('answerText').textContent = data.answer;
-            document.getElementById('respSteps').textContent = data.tools_used ? data.tools_used.length : 0;
-            document.getElementById('respTime').textContent = data.processing_time_seconds + 's';
+            document.getElementById('answerText').textContent  = data.answer;
+            document.getElementById('respSteps').textContent   = data.tools_used ? data.tools_used.length : 0;
+            document.getElementById('respTime').textContent    = data.processing_time_seconds + 's';
 
             const toolsList = document.getElementById('toolsFiredList');
             toolsList.innerHTML = '';

@@ -52,6 +52,7 @@ class MaintenanceAgent:
         from src.tools.unit_converter_tool import unit_converter
         from src.tools.spec_checker_tool import spec_checker
         from src.tools.telemetry_tool import get_equipment_telemetry, list_all_equipment
+        from src.tools.mcp_tool import query_mcp_industrial_server
 
         retrieval_tool = create_retrieval_tool(pipeline)
 
@@ -62,6 +63,7 @@ class MaintenanceAgent:
             spec_checker,
             get_equipment_telemetry,
             list_all_equipment,
+            query_mcp_industrial_server,
         ]
 
         # Bind tools to LLM
@@ -71,7 +73,7 @@ class MaintenanceAgent:
         self.graph = self._build_graph()
         self.conversation_history = []
 
-        logger.info("LangGraph Maintenance Agent initialized with 6 tools")
+        logger.info("LangGraph Maintenance Agent initialized with 7 tools")
 
     def _build_graph(self):
         """
