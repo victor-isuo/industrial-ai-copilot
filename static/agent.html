@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -598,6 +598,89 @@
         .execute-btn:active { transform: translateY(0); }
         .execute-btn:disabled { background: var(--text-dim); cursor: not-allowed; transform: none; box-shadow: none; }
 
+        /* Image upload */
+        .image-upload-row {
+            padding: 0 20px 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .image-upload-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            border: 1px dashed var(--border-bright);
+            color: var(--text-mid);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: 1px;
+        }
+
+        .image-upload-label:hover {
+            border-color: var(--cyan-dim);
+            color: var(--cyan);
+            background: var(--cyan-glow);
+        }
+
+        .image-upload-icon { font-size: 14px; }
+        .image-upload-text { font-weight: 600; }
+        .image-upload-hint { color: var(--text-dim); font-size: 9px; }
+
+        .image-preview-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .image-preview-wrap img {
+            height: 48px;
+            width: 48px;
+            object-fit: cover;
+            border: 1px solid var(--border-bright);
+        }
+
+        .image-clear-btn {
+            background: transparent;
+            border: 1px solid rgba(255,68,68,0.3);
+            color: var(--red);
+            font-size: 12px;
+            padding: 2px 8px;
+            cursor: pointer;
+            height: auto;
+            min-width: unset;
+            transition: all 0.2s;
+        }
+
+        .image-clear-btn:hover { background: rgba(255,68,68,0.1); transform: none; box-shadow: none; }
+
+        .image-type-row { display: flex; align-items: center; gap: 8px; }
+
+        .image-type-label {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--text-mid);
+            letter-spacing: 1px;
+        }
+
+        .image-type-select {
+            background: var(--bg-input);
+            border: 1px solid var(--border-bright);
+            color: var(--text-bright);
+            font-family: var(--mono);
+            font-size: 10px;
+            padding: 4px 8px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .image-type-select:focus { border-color: var(--cyan-dim); }
+
         .examples-row {
             padding: 0 20px 14px;
             display: flex;
@@ -889,7 +972,7 @@
             <div class="status-row">
                 <div class="status-indicator online"></div>
                 <span class="status-label">Tool Registry</span>
-                <span class="status-value">7 LOADED</span>
+                <span class="status-value">9 LOADED</span>
             </div>
         </div>
 
@@ -946,6 +1029,16 @@
                 <span class="tool-name">mcp_server</span>
                 <span class="tool-status">IDLE</span>
             </div>
+            <div class="tool-item" id="tool-vision">
+                <div class="tool-dot"></div>
+                <span class="tool-name">analyze_image</span>
+                <span class="tool-status">IDLE</span>
+            </div>
+            <div class="tool-item" id="tool-gauge">
+                <div class="tool-dot"></div>
+                <span class="tool-name">read_gauge</span>
+                <span class="tool-status">IDLE</span>
+            </div>
         </div>
 
         <div class="kb-section">
@@ -964,7 +1057,7 @@
             </div>
             <div class="kb-stat">
                 <span class="kb-label">Tools</span>
-                <span class="kb-value">7 ACTIVE</span>
+                <span class="kb-value">9 ACTIVE</span>
             </div>
             <div class="kb-stat">
                 <span class="kb-label">Model</span>
@@ -1026,10 +1119,34 @@
                 <div class="query-body">
                     <textarea
                         id="questionInput"
-                        placeholder="Describe the engineering problem — the agent will plan and execute tool sequences autonomously..."
+                        placeholder="Describe the engineering problem — or upload an equipment image below for visual analysis..."
                         onkeydown="handleKey(event)"
                     ></textarea>
                     <button class="execute-btn" id="submitBtn" onclick="submitQuery()">EXECUTE</button>
+                </div>
+
+                <!-- Image upload -->
+                <div class="image-upload-row" id="imageUploadRow">
+                    <label class="image-upload-label" for="imageInput">
+                        <span class="image-upload-icon">📷</span>
+                        <span class="image-upload-text">ATTACH IMAGE</span>
+                        <span class="image-upload-hint">gauge · nameplate · fault · P&ID</span>
+                    </label>
+                    <input type="file" id="imageInput" accept="image/*" onchange="handleImageSelect(event)" style="display:none">
+                    <div class="image-preview-wrap" id="imagePreviewWrap" style="display:none">
+                        <img id="imagePreview" src="" alt="preview">
+                        <button class="image-clear-btn" onclick="clearImage()">✕</button>
+                        <div class="image-type-row">
+                            <span class="image-type-label">ANALYSIS:</span>
+                            <select id="analysisType" class="image-type-select">
+                                <option value="general">General Assessment</option>
+                                <option value="gauge">Read Gauge Value</option>
+                                <option value="nameplate">Extract Nameplate Data</option>
+                                <option value="fault">Diagnose Fault/Damage</option>
+                                <option value="pid">Analyze P&ID Diagram</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
                 <div class="examples-row">
                     <span class="ex-label">TRY →</span>
@@ -1127,6 +1244,42 @@
         document.body.style.overflow = isOpen ? 'hidden' : '';
     }
 
+    // ── Image handling ────────────────────────────────────────
+    let currentImageBase64 = null;
+
+    function handleImageSelect(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            currentImageBase64 = e.target.result; // full data URI
+            document.getElementById('imagePreview').src = e.target.result;
+            document.getElementById('imagePreviewWrap').style.display = 'flex';
+
+            // Auto-set analysis type hint in placeholder
+            const analysisType = document.getElementById('analysisType').value;
+            const hints = {
+                general:   'Describe what you want to know about this equipment image...',
+                gauge:     'What is the gauge reading? Should I check it against a spec?',
+                nameplate: 'Extract the nameplate data from this equipment...',
+                fault:     'Diagnose the fault or damage visible in this image...',
+                pid:       'Analyze this P&ID diagram and identify the components...',
+            };
+            document.getElementById('questionInput').placeholder = hints[analysisType] || hints.general;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function clearImage() {
+        currentImageBase64 = null;
+        document.getElementById('imageInput').value = '';
+        document.getElementById('imagePreviewWrap').style.display = 'none';
+        document.getElementById('imagePreview').src = '';
+        document.getElementById('questionInput').placeholder =
+            'Describe the engineering problem — or upload an equipment image below for visual analysis...';
+    }
+
     const TOOL_IDS = {
         'search_industrial_documentation': 'tool-search',
         'engineering_calculator':          'tool-calc',
@@ -1135,6 +1288,8 @@
         'get_equipment_telemetry':         'tool-telemetry',
         'list_all_equipment':              'tool-equipment',
         'query_mcp_industrial_server':     'tool-mcp',
+        'analyze_equipment_image':         'tool-vision',
+        'analyze_gauge_reading':           'tool-gauge',
     };
 
     function setQuery(text) {
@@ -1225,7 +1380,22 @@
 
     async function submitQuery() {
         const question = document.getElementById('questionInput').value.trim();
-        if (!question) return;
+        if (!question && !currentImageBase64) return;
+
+        const analysisType = document.getElementById('analysisType')?.value || 'general';
+
+        // Build question — append image instruction if image attached
+        let fullQuestion = question;
+        if (currentImageBase64 && !question) {
+            const typeLabels = {
+                general: 'Assess this equipment image',
+                gauge: 'Read this gauge and report the value',
+                nameplate: 'Extract nameplate data from this image',
+                fault: 'Diagnose the fault visible in this image',
+                pid: 'Analyze this P&ID diagram',
+            };
+            fullQuestion = typeLabels[analysisType] || 'Analyze this equipment image';
+        }
 
         document.getElementById('submitBtn').disabled = true;
         document.getElementById('responsePanel').classList.remove('visible');
@@ -1240,7 +1410,11 @@
             const res = await fetch(`${API}/agent`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ question })
+                body: JSON.stringify({
+                    question: fullQuestion,
+                    image_base64: currentImageBase64 || null,
+                    analysis_type: analysisType,
+                })
             });
 
             if (!res.ok) throw new Error(`API error: ${res.status}`);

@@ -22,9 +22,9 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Global instances
-pipeline     = None
-agent        = None
-vector_store = None  # Kept globally so ingest router can update it live
+pipeline = None
+agent = None
+vector_store = None # Kept globally so ingest router can update it live
 
 
 async def initialize_pipeline():
@@ -32,7 +32,7 @@ async def initialize_pipeline():
 
     try:
         logger.info("Initializing pipeline in background...")
-        docs   = load_documents()
+        docs = load_documents()
         chunks = chunk_documents(docs)
 
         if not chunks:
@@ -46,8 +46,8 @@ async def initialize_pipeline():
         set_vector_store(vector_store)
 
         retriever = create_hybrid_retriever(vector_store, chunks)
-        reranker  = CohereReranker(top_n=5)
-        pipeline  = RAGPipeline(retriever=retriever, reranker=reranker)
+        reranker = CohereReranker(top_n=5)
+        pipeline = RAGPipeline(retriever=retriever, reranker=reranker)
         logger.info("Pipeline ready. System operational.")
 
         # Initialize agent
@@ -130,6 +130,8 @@ class QueryResponse(BaseModel):
 
 class AgentRequest(BaseModel):
     question: str
+    image_base64: str = None
+    analysis_type: str = "general"
 
 
 class AgentResponse(BaseModel):
@@ -143,21 +145,21 @@ class AgentResponse(BaseModel):
 @app.get("/")
 async def root():
     return {
-        "name":    "Industrial AI Copilot",
+        "name": "Industrial AI Copilot",
         "version": "3.0.0",
-        "status":  "operational",
-        "docs":    "/docs",
-        "phase":   "Phase 3 — Ingestion Pipeline + Telemetry + Multimodal"
+        "status": "operational",
+        "docs": "/docs",
+        "phase": "Phase 3 — Ingestion Pipeline + Telemetry + Multimodal"
     }
 
 
 @app.get("/health")
 async def health():
     return {
-        "status":          "healthy",
+        "status": "healthy",
         "pipeline_loaded": pipeline is not None,
-        "agent_loaded":    agent is not None,
-        "vector_store":    vector_store is not None,
+        "agent_loaded": agent is not None,
+        "vector_store": vector_store is not None,
     }
 
 
@@ -180,9 +182,9 @@ async def query(request: QueryRequest):
         )
 
     try:
-        start    = time.time()
+        start = time.time()
         response = pipeline.query(request.question)
-        elapsed  = round(time.time() - start, 2)
+        elapsed = round(time.time() - start, 2)
 
         return QueryResponse(
             answer=response.answer,
@@ -206,7 +208,7 @@ async def list_documents():
         docs = list(Path(".").glob("*.pdf"))
     return {
         "indexed_documents": [d.name for d in docs],
-        "total":             len(docs)
+        "total": len(docs)
     }
 
 
@@ -229,8 +231,45 @@ async def run_agent(request: AgentRequest):
         )
 
     try:
-        start   = time.time()
-        result  = agent.run(request.question)
+        start = time.time()
+
+        # If image provided, prepend image path info to question
+        question = request.question
+        if request.image_base64:
+            # Save image temporarily for the vision tool
+            import base64
+            import uuid
+            from pathlib import Path
+
+            img_dir = Path("data/images")
+            img_dir.mkdir(parents=True, exist_ok=True)
+
+            # Decode and save image
+            img_id = str(uuid.uuid4())[:8]
+            img_data = request.image_base64
+
+            # Handle data URI format
+            if "," in img_data:
+                header, b64 = img_data.split(",", 1)
+                ext = "jpg" if "jpeg" in header else "png"
+            else:
+                b64 = img_data
+                ext = "jpg"
+
+            img_path = img_dir / f"upload_{img_id}.{ext}"
+            img_path.write_bytes(base64.b64decode(b64))
+
+            # Prepend image context to question
+            question = (
+                f"{request.question}\n\n"
+                f"[IMAGE ATTACHED: {img_path} | "
+                f"Analysis type: {request.analysis_type}]\n"
+                f"Use analyze_equipment_image or analyze_gauge_reading tool "
+                f"with image_path='{img_path}' and "
+                f"analysis_type='{request.analysis_type}'"
+            )
+
+        result = agent.run(question)
         elapsed = round(time.time() - start, 2)
 
         return AgentResponse(
@@ -250,9 +289,9 @@ async def telemetry_overview():
     """Get health overview of all equipment in the plant."""
     equipment = list_equipment()
     return {
-        "equipment":    equipment,
+        "equipment": equipment,
         "total_assets": len(equipment),
-        "alerts":       sum(e["alert_count"] for e in equipment),
+        "alerts": sum(e["alert_count"] for e in equipment),
     }
 
 

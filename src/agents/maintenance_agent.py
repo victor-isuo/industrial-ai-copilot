@@ -53,6 +53,7 @@ class MaintenanceAgent:
         from src.tools.spec_checker_tool import spec_checker
         from src.tools.telemetry_tool import get_equipment_telemetry, list_all_equipment
         from src.tools.mcp_tool import query_mcp_industrial_server
+        from src.tools.vision_tool import analyze_equipment_image, analyze_gauge_reading
 
         retrieval_tool = create_retrieval_tool(pipeline)
 
@@ -64,6 +65,8 @@ class MaintenanceAgent:
             get_equipment_telemetry,
             list_all_equipment,
             query_mcp_industrial_server,
+            analyze_equipment_image,
+            analyze_gauge_reading,
         ]
 
         # Bind tools to LLM
@@ -73,7 +76,7 @@ class MaintenanceAgent:
         self.graph = self._build_graph()
         self.conversation_history = []
 
-        logger.info("LangGraph Maintenance Agent initialized with 7 tools")
+        logger.info("LangGraph Maintenance Agent initialized with 9 tools")
 
     def _build_graph(self):
         """
@@ -97,10 +100,12 @@ TOOL USAGE RULES — FOLLOW STRICTLY:
 4. Call search_industrial_documentation for ANY question about equipment, safety, procedures, or maintenance
 5. Call get_equipment_telemetry when asked about current readings, live status, or equipment health
 6. Call list_all_equipment when asked about overall plant status or available equipment
-7. For vague symptoms (strange noise, vibration, leaks) — search documentation first
-8. For equipment diagnosis — call get_equipment_telemetry FIRST to get live readings, then spec_checker to evaluate them, then search_industrial_documentation for procedures
-9. If a query is completely outside industrial/engineering scope — decline politely, use NO tools
-10. When measurements AND a spec limit are both present — you MUST call spec_checker, never answer from memory
+7. Call analyze_equipment_image when an image path or base64 image is provided for general analysis
+8. Call analyze_gauge_reading when an image of a gauge is provided — optionally check against spec
+9. For vague symptoms (strange noise, vibration, leaks) — search documentation first
+10. For equipment diagnosis — call get_equipment_telemetry FIRST, then spec_checker, then search docs
+11. If a query is completely outside industrial/engineering scope — decline politely, use NO tools
+12. When measurements AND a spec limit are both present — you MUST call spec_checker, never answer from memory
 
 RESPONSE RULES:
 - Always cite sources when using search_industrial_documentation
