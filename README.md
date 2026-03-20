@@ -7,19 +7,19 @@ sdk: docker
 pinned: false
 ---
 
-
 # ⚙️ Industrial AI Copilot
 
 A production-grade RAG and agentic AI platform for industrial engineering documentation.
 Built to demonstrate end-to-end LLM system design — from hybrid retrieval to autonomous
-multi-tool reasoning, live telemetry integration, document ingestion pipelines, and MCP connectivity.
+multi-tool reasoning, live telemetry integration, multimodal vision, document ingestion
+pipelines, and MCP connectivity.
 
 ## 🔴 Live Demo
 
 | Interface | URL | Description |
 |-----------|-----|-------------|
 | RAG Search | https://victorisuo-industrial-ai-copilot.hf.space/ui | Hybrid retrieval over 27 documents |
-| Agent Mode | https://victorisuo-industrial-ai-copilot.hf.space/agent-ui | Autonomous 7-tool reasoning agent |
+| Agent Mode | https://victorisuo-industrial-ai-copilot.hf.space/agent-ui | Autonomous 9-tool reasoning agent |
 | Knowledge Base | https://victorisuo-industrial-ai-copilot.hf.space/ingest-ui | Live document ingestion dashboard |
 
 ---
@@ -28,33 +28,33 @@ multi-tool reasoning, live telemetry integration, document ingestion pipelines, 
 
 Industrial environments generate massive volumes of technical documentation —
 equipment manuals, safety datasheets, maintenance guides, compliance standards.
-At the same time, physical equipment generates continuous sensor data that needs
-to be interpreted against those documents in real time.
+At the same time, physical equipment generates continuous sensor data and visual
+conditions that need to be interpreted against those documents in real time.
 
 This platform makes that documentation queryable, reasoned over, and actionable
 through a progressively capable AI system — from hybrid retrieval to live telemetry
-diagnosis to external system integration via MCP.
+diagnosis, equipment image analysis, and external system integration via MCP.
 
 ---
 
 ## Architecture Overview
 
 ```
-PDF Upload ──────────────────────────────────────────┐
-                                                      ↓
-Equipment Photo ──→ Vision API (Phase 3C) Ingestion Pipeline
-                                                      ↓
-Telemetry API ──→ MCP Tool Chunking + Embedding
-                                                      ↓
-                                                  ChromaDB
-                                                      ↓
-Engineer Query ──────────────────→ LangGraph Agent (7 Tools)
-                                                      ↓
-                         ┌─────────────────────────────────────┐
-                         ↓ ↓ ↓ ↓
-                    RAG Search Spec Checker Telemetry MCP Server
-                         ↓ ↓ ↓ ↓
-                         └─────── Cited, Actionable Response ───┘
+PDF Upload ──────────────────────────────────────────────┐
+                                                          ↓
+Equipment Photo ──→ Gemini 2.5 Flash Vision     Ingestion Pipeline
+                                                          ↓
+Telemetry API ──→ MCP Tool                     Chunking + Embedding
+                                                          ↓
+                                                      ChromaDB
+                                                          ↓
+Engineer Query ──────────────────────→ LangGraph Agent (9 Tools)
+                                                          ↓
+              ┌──────────────────────────────────────────────────┐
+              ↓          ↓           ↓          ↓           ↓
+         RAG Search  Spec Checker  Telemetry  Vision      MCP Server
+              ↓          ↓           ↓          ↓           ↓
+              └────────── Cited, Actionable Response ──────────┘
 ```
 
 ---
@@ -65,8 +65,10 @@ Engineer Query ──────────────────→ LangGra
 |-------|-----------|--------|
 | 1 | Hybrid RAG retrieval engine with Cohere reranking | ✅ Complete |
 | 2 | LangGraph agentic layer — 4 tools, 90% eval accuracy | ✅ Complete |
-| 3 | Live ingestion pipeline + telemetry + MCP integration | ✅ Complete |
-| 3C | Multimodal vision — equipment photo analysis | 🔨 In Progress |
+| 3A | Live document ingestion pipeline | ✅ Complete |
+| 3B | Equipment telemetry with fault detection | ✅ Complete |
+| 3C | Multimodal vision — equipment photos, gauges, P&ID diagrams | ✅ Complete |
+| 3D | MCP server + client integration | ✅ Complete |
 | 4 | Multi-agent orchestration | 📅 Planned |
 
 ---
@@ -206,15 +208,16 @@ Equipment Registry → Sensor Simulation → Drift Engine → Fault Detection
 ```
 
 **Equipment modeled:**
-| Asset | Type | Parameters |
-|-------|------|-----------|
+
+| Asset | Type | Parameters Monitored |
+|-------|------|---------------------|
 | pump-001 | Gear Pump | Pressure, flow, temperature, vibration, shaft speed |
 | pump-002 | Centrifugal Pump | Pressure, suction, flow, temperature, vibration |
 | motor-001 | Electric Motor | Winding temp, bearing temp, current, vibration, insulation |
 | compressor-001 | Reciprocating Compressor | Discharge pressure, oil pressure, temperature, RPM |
 
-**Fault scenarios (active, time-drifting):**
-- pump-001 — Developing bearing wear (vibration drifting up)
+**Active fault scenarios (time-drifting):**
+- pump-001 — Developing bearing wear (vibration drifting upward)
 - pump-002 — Suction cavitation (suction pressure dropping)
 - motor-001 — Bearing overheating (temperature rising)
 - compressor-001 — Oil pressure degradation (pressure dropping)
@@ -223,7 +226,7 @@ Equipment Registry → Sensor Simulation → Drift Engine → Fault Detection
 ```
 Query: "Diagnose pump-001"
   → Agent calls get_equipment_telemetry(pump-001)
-  → Detects developing bearing wear, vibration drifting for 4.9 minutes
+  → Detects developing bearing wear, vibration drifting 4.9 minutes
   → Agent calls search_industrial_documentation for bearing inspection procedure
   → Returns: fault diagnosis + maintenance procedure + page citations
 ```
@@ -233,10 +236,57 @@ Query: "Diagnose pump-001"
 > The agent tool interface is identical regardless of data source.
 
 **New tools added:**
+
 | Tool | Purpose |
 |------|---------|
 | `get_equipment_telemetry` | Live sensor readings with severity classification |
 | `list_all_equipment` | Plant-wide health overview with alert counts |
+
+---
+
+### 3C — Multimodal Vision
+
+**Problem:** Field engineers encounter equipment issues they can photograph
+but struggle to diagnose without documentation access.
+
+**Solution:** Gemini 2.5 Flash vision integration giving the agent
+the ability to see and reason over equipment images.
+
+**Four vision capabilities:**
+
+| Mode | Use Case |
+|------|---------|
+| Gauge Reading | Photograph a pressure/temperature gauge — agent reads value and checks against spec |
+| Nameplate Extraction | Photograph equipment nameplate — agent extracts model, ratings, serial number |
+| Fault Diagnosis | Photograph damaged equipment — agent classifies fault type and severity |
+| P&ID Analysis | Photograph piping diagram — agent identifies components and retrieves procedures |
+
+**Example workflow — gauge reading:**
+```
+Engineer uploads gauge photo + "Is this reading safe?"
+  → Agent calls analyze_gauge_reading(image_path, analysis_type='gauge')
+  → Gemini 2.5 Flash reads: 450 psi
+  → Agent calls spec_checker(450, 380, 'discharge pressure', 'psi')
+  → Returns: WARNING — 18.4% above specification. Urgent inspection needed.
+```
+
+**Example workflow — fault diagnosis:**
+```
+Engineer uploads photo of leaking pump seal
+  → Agent calls analyze_equipment_image(image_path, analysis_type='fault')
+  → Gemini identifies: mechanical seal failure, oil leakage, severity WARNING
+  → Agent calls search_industrial_documentation for seal replacement procedure
+  → Returns: fault classification + step-by-step repair procedure + citations
+```
+
+Model: Gemini 2.5 Flash (multimodal)
+
+**New tools added:**
+
+| Tool | Purpose |
+|------|---------|
+| `analyze_equipment_image` | General equipment image analysis — fault, nameplate, P&ID |
+| `analyze_gauge_reading` | Read gauge value from photo and check against spec |
 
 ---
 
@@ -287,9 +337,15 @@ one MCP server makes your system accessible to the entire
 MCP-compatible ecosystem. This is the production integration
 pattern for enterprise AI in 2025.
 
+**New tool added:**
+
+| Tool | Purpose |
+|------|---------|
+| `query_mcp_industrial_server` | Connect to industrial system via MCP protocol |
+
 ---
 
-## Complete Tool Registry (7 Tools)
+## Complete Tool Registry (9 Tools)
 
 | Tool | Phase | Purpose |
 |------|-------|---------|
@@ -299,6 +355,8 @@ pattern for enterprise AI in 2025.
 | `spec_checker` | 2 | Sensor reading vs specification with severity |
 | `get_equipment_telemetry` | 3B | Live sensor readings with fault detection |
 | `list_all_equipment` | 3B | Plant-wide equipment health overview |
+| `analyze_equipment_image` | 3C | Equipment image analysis — fault, nameplate, P&ID |
+| `analyze_gauge_reading` | 3C | Read gauge from photo and check against spec |
 | `query_mcp_industrial_server` | 3D | MCP protocol client integration |
 
 ---
@@ -319,6 +377,7 @@ is observable and debuggable in production.
 | Layer | Technology |
 |-------|-----------|
 | LLM | Groq — Llama 4 Scout 17B |
+| Vision | Gemini 2.5 Flash (multimodal) |
 | Agent Framework | LangGraph |
 | Orchestration | LangChain |
 | Vector Store | ChromaDB |
@@ -336,23 +395,30 @@ is observable and debuggable in production.
 ```
 industrial-ai-copilot/
 ├── src/
-│ ├── core/ # RAG pipeline, retrieval, reranking, vector store
-│ │ └── ingestion_pipeline.py # Live document ingestion
-│ ├── agents/ # LangGraph agent definitions
-│ ├── tools/ # 7 tool abstractions
-│ ├── api/ # FastAPI routers
-│ │ ├── ingest_router.py # Ingestion endpoints
-│ │ └── telemetry_api.py # Telemetry simulation engine
-│ ├── mcp/ # MCP server and client
-│ │ └── mcp_server.py # MCP server exposing industrial tools
-│ └── evaluation/ # 30-case evaluation framework
+│   ├── core/                       # RAG pipeline, retrieval, reranking, vector store
+│   │   └── ingestion_pipeline.py   # Live document ingestion
+│   ├── agents/                     # LangGraph agent — 9 tools
+│   ├── tools/                      # Tool abstractions
+│   │   ├── retrieval_tool.py       # RAG search
+│   │   ├── spec_checker_tool.py    # Specification comparison
+│   │   ├── unit_converter_tool.py  # Unit conversions
+│   │   ├── calculator_tool.py      # Engineering calculations
+│   │   ├── telemetry_tool.py       # Live equipment telemetry
+│   │   ├── vision_tool.py          # Gemini multimodal vision
+│   │   └── mcp_tool.py             # MCP client
+│   ├── api/                        # FastAPI routers
+│   │   ├── ingest_router.py        # Ingestion endpoints
+│   │   └── telemetry_api.py        # Telemetry simulation engine
+│   ├── mcp/                        # MCP server
+│   │   └── mcp_server.py           # Exposes industrial tools via MCP
+│   └── evaluation/                 # 30-case evaluation framework
 ├── data/
-│ └── raw/ # Source documents (gitignored)
+│   └── raw/                        # Source documents (gitignored)
 ├── static/
-│ ├── index.html # RAG interface
-│ ├── agent.html # Agent interface
-│ └── ingest.html # Knowledge Base management UI
-├── main.py # FastAPI application
+│   ├── index.html                  # RAG interface
+│   ├── agent.html                  # Agent interface with image upload
+│   └── ingest.html                 # Knowledge Base management UI
+├── main.py                         # FastAPI application
 ├── Dockerfile
 └── requirements.txt
 ```
@@ -367,7 +433,7 @@ industrial-ai-copilot/
 | `/agent-ui` | GET | Agent mode interface |
 | `/ingest-ui` | GET | Knowledge base management |
 | `/query` | POST | RAG query |
-| `/agent` | POST | Agentic reasoning |
+| `/agent` | POST | Agentic reasoning (supports image upload) |
 | `/ingest` | POST | Upload and index PDF |
 | `/ingest/status/{job_id}` | GET | Ingestion job status |
 | `/ingest/documents` | GET | List indexed documents |
@@ -393,9 +459,10 @@ Create `.env`:
 GROQ_API_KEY=your_key_here
 COHERE_API_KEY=your_key_here
 LANGCHAIN_API_KEY=your_key_here
+GEMINI_API_KEY=your_key_here
 ```
 
-Run:
+Run server:
 ```bash
 uvicorn main:app --reload
 ```
@@ -418,15 +485,15 @@ python -m src.evaluation.eval_runner
 - [x] Phase 2 — LangGraph agent, 4 tools, 90% eval accuracy
 - [x] Phase 3A — Live document ingestion pipeline
 - [x] Phase 3B — Equipment telemetry with fault detection
+- [x] Phase 3C — Multimodal vision (gauges, nameplates, faults, P&ID)
 - [x] Phase 3D — MCP server + client integration
-- [ ] Phase 3C — Multimodal vision (equipment photos, gauges, P&ID diagrams)
 - [ ] Phase 4 — Multi-agent orchestration
 
 ---
 
 ## Author
 
-**Victor Isuo** — Applied LLM Systems Engineer
+**Victor Isuo** — Applied LLM Engineer
 
 Building production-grade RAG and Agentic AI systems for industrial and enterprise applications.
 
