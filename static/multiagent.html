@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Industrial AI Copilot — Multi-Agent Orchestration</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@300;400;500&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg:        #03060f;
+            --bg-panel:  #080e1a;
+            --bg-card:   #0c1422;
+            --border:    #0f2040;
+            --orange:    #f07020;
+            --cyan:      #00d4ff;
+            --green:     #00e676;
+            --yellow:    #ffd740;
+            --red:       #ff6b6b;
+            --purple:    #c77dff;
+            --text:      #e2eaf6;
+            --text-mid:  #8aa4c0;
+            --text-dim:  #2a4060;
+            --mono:      'JetBrains Mono', monospace;
+            --display:   'Orbitron', sans-serif;
+            --ui:        'Rajdhani', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--ui);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Starfield background */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: radial-gradient(1px 1px at 20% 30%, rgba(0,212,255,0.3) 0%, transparent 100%),
+                              radial-gradient(1px 1px at 80% 10%, rgba(255,255,255,0.2) 0%, transparent 100%),
+                              radial-gradient(1px 1px at 50% 60%, rgba(0,230,118,0.2) 0%, transparent 100%),
+                              radial-gradient(1px 1px at 10% 80%, rgba(255,215,64,0.2) 0%, transparent 100%),
+                              radial-gradient(1px 1px at 90% 70%, rgba(199,125,255,0.2) 0%, transparent 100%),
+                              linear-gradient(rgba(0,212,255,0.02) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(0,212,255,0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Animated scan line */
+        body::after {
+            content: '';
+            position: fixed;
+            top: -100%;
+            left: 0;
+            right: 0;
+            height: 200%;
+            background: linear-gradient(transparent 0%, rgba(0,212,255,0.03) 50%, transparent 100%);
+            animation: scan 8s linear infinite;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        @keyframes scan {
+            0% { transform: translateY(-50%); }
+            100% { transform: translateY(50%); }
+        }
+
+        /* Hazard stripe */
+        .hazard-stripe {
+            height: 3px;
+            background: repeating-linear-gradient(
+                90deg, var(--orange) 0px, var(--orange) 16px,
+                transparent 16px, transparent 24px
+            );
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Top bar */
+        .top-bar {
+            position: relative;
+            z-index: 5;
+            background: linear-gradient(180deg, rgba(8,14,26,0.98) 0%, rgba(8,14,26,0.95) 100%);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            backdrop-filter: blur(10px);
+        }
+
+        .top-bar-left { display: flex; align-items: center; gap: 20px; }
+
+        .system-title {
+            font-family: var(--display);
+            font-size: 13px;
+            letter-spacing: 4px;
+            color: var(--orange);
+            text-shadow: 0 0 20px rgba(240,112,32,0.5);
+        }
+
+        .phase-badge {
+            font-family: var(--mono);
+            font-size: 9px;
+            padding: 3px 10px;
+            border: 1px solid var(--purple);
+            color: var(--purple);
+            letter-spacing: 2px;
+            background: rgba(199,125,255,0.08);
+        }
+
+        .nav-links { display: flex; gap: 6px; }
+
+        .nav-link {
+            font-family: var(--mono);
+            font-size: 10px;
+            padding: 5px 12px;
+            border: 1px solid var(--border);
+            color: var(--text-mid);
+            text-decoration: none;
+            transition: all 0.2s;
+            letter-spacing: 1px;
+        }
+
+        .nav-link:hover { border-color: var(--cyan); color: var(--cyan); background: rgba(0,212,255,0.05); }
+        .nav-link.active { border-color: var(--orange); color: var(--orange); background: rgba(240,112,32,0.08); }
+
+        .status-row { display: flex; align-items: center; gap: 16px; }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--green);
+            letter-spacing: 1px;
+        }
+
+        .status-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 8px var(--green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
+        /* Main layout */
+        .main {
+            position: relative;
+            z-index: 2;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 28px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* Hero section */
+        .hero {
+            text-align: center;
+            padding: 20px 0 8px;
+        }
+
+        .hero-label {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--purple);
+            letter-spacing: 4px;
+            margin-bottom: 12px;
+        }
+
+        .hero-title {
+            font-family: var(--display);
+            font-size: clamp(24px, 4vw, 40px);
+            letter-spacing: 4px;
+            line-height: 1.1;
+            background: linear-gradient(135deg, var(--text) 0%, var(--cyan) 50%, var(--purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .hero-sub {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-mid);
+            letter-spacing: 2px;
+        }
+
+        /* Agent network visualization */
+        .agent-network {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .agent-network::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 50% 50%, rgba(199,125,255,0.04) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .network-label {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--text-dim);
+            letter-spacing: 3px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .network-layout {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            position: relative;
+        }
+
+        /* Supervisor node */
+        .supervisor-node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            z-index: 2;
+        }
+
+        .supervisor-hex {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, rgba(240,112,32,0.2), rgba(240,112,32,0.05));
+            border: 2px solid var(--orange);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 30px rgba(240,112,32,0.3), inset 0 0 20px rgba(240,112,32,0.1);
+            position: relative;
+            animation: supervisorPulse 3s ease infinite;
+        }
+
+        @keyframes supervisorPulse {
+            0%,100% { box-shadow: 0 0 30px rgba(240,112,32,0.3), inset 0 0 20px rgba(240,112,32,0.1); }
+            50% { box-shadow: 0 0 50px rgba(240,112,32,0.5), inset 0 0 30px rgba(240,112,32,0.2); }
+        }
+
+        .supervisor-icon { font-size: 28px; }
+
+        .supervisor-label {
+            font-family: var(--display);
+            font-size: 9px;
+            letter-spacing: 2px;
+            color: var(--orange);
+            text-align: center;
+        }
+
+        /* Connection lines */
+        .connections {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin: 0 16px;
+        }
+
+        .conn-line {
+            width: 60px;
+            height: 1px;
+            background: linear-gradient(90deg, var(--orange), transparent);
+            position: relative;
+            opacity: 0.4;
+            transition: all 0.3s;
+        }
+
+        .conn-line.active {
+            opacity: 1;
+            background: linear-gradient(90deg, var(--orange), var(--cyan));
+            box-shadow: 0 0 6px rgba(0,212,255,0.5);
+        }
+
+        .conn-line::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: -3px;
+            width: 0;
+            height: 0;
+            border-left: 6px solid var(--cyan);
+            border-top: 3px solid transparent;
+            border-bottom: 3px solid transparent;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .conn-line.active::after { opacity: 1; }
+
+        /* Specialist nodes */
+        .specialists-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .specialist-node {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 14px;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.02);
+            transition: all 0.4s;
+            cursor: default;
+            min-width: 200px;
+        }
+
+        .specialist-node.active {
+            border-color: var(--node-color, var(--cyan));
+            background: rgba(var(--node-rgb, 0,212,255), 0.08);
+            box-shadow: 0 0 20px rgba(var(--node-rgb, 0,212,255), 0.15);
+        }
+
+        .specialist-node.complete {
+            border-color: var(--node-color, var(--cyan));
+            opacity: 0.8;
+        }
+
+        .node-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-dim);
+            flex-shrink: 0;
+            transition: all 0.3s;
+        }
+
+        .specialist-node.active .node-indicator {
+            background: var(--node-color, var(--cyan));
+            box-shadow: 0 0 8px var(--node-color, var(--cyan));
+            animation: pulse 0.5s infinite;
+        }
+
+        .specialist-node.complete .node-indicator {
+            background: var(--green);
+            box-shadow: 0 0 6px var(--green);
+        }
+
+        .node-info { flex: 1; }
+
+        .node-name {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-mid);
+            letter-spacing: 1px;
+            transition: color 0.3s;
+        }
+
+        .specialist-node.active .node-name { color: var(--node-color, var(--cyan)); }
+
+        .node-role {
+            font-family: var(--mono);
+            font-size: 8px;
+            color: var(--text-dim);
+            margin-top: 2px;
+        }
+
+        .node-status {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+        }
+
+        .specialist-node.active .node-status { color: var(--node-color, var(--cyan)); }
+        .specialist-node.complete .node-status { color: var(--green); }
+
+        /* Report node */
+        .report-connection {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0 16px;
+        }
+
+        .report-line {
+            width: 60px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--purple));
+            opacity: 0.4;
+            transition: all 0.3s;
+        }
+
+        .report-line.active {
+            opacity: 1;
+            box-shadow: 0 0 6px rgba(199,125,255,0.5);
+        }
+
+        .report-node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .report-hex {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, rgba(199,125,255,0.15), rgba(199,125,255,0.03));
+            border: 2px solid rgba(199,125,255,0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.4s;
+        }
+
+        .report-hex.active {
+            border-color: var(--purple);
+            box-shadow: 0 0 30px rgba(199,125,255,0.4);
+        }
+
+        .report-icon { font-size: 24px; }
+
+        .report-label {
+            font-family: var(--display);
+            font-size: 8px;
+            letter-spacing: 2px;
+            color: var(--purple);
+            text-align: center;
+            opacity: 0.6;
+            transition: opacity 0.3s;
+        }
+
+        .report-hex.active + .report-label { opacity: 1; }
+
+        /* Query input */
+        .query-panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .query-panel::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--orange), var(--purple), var(--cyan), var(--orange));
+            background-size: 300% 100%;
+            animation: shimmer 4s linear infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 300% 0; }
+            100% { background-position: -300% 0; }
+        }
+
+        .query-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 20px 0;
+        }
+
+        .query-label {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--orange);
+            letter-spacing: 2px;
+        }
+
+        .query-hint {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--text-mid);
+        }
+
+        .query-body {
+            padding: 12px 20px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        textarea {
+            flex: 1;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-family: var(--ui);
+            font-size: 15px;
+            font-weight: 500;
+            padding: 14px 16px;
+            resize: none;
+            height: 90px;
+            outline: none;
+            transition: border-color 0.2s;
+            line-height: 1.5;
+        }
+
+        textarea:focus { border-color: rgba(199,125,255,0.5); }
+        textarea::placeholder { color: var(--text-dim); font-weight: 400; }
+
+        .execute-btn {
+            background: linear-gradient(135deg, var(--purple), rgba(199,125,255,0.7));
+            color: #000;
+            border: none;
+            padding: 0 28px;
+            height: 90px;
+            font-family: var(--display);
+            font-size: 14px;
+            letter-spacing: 3px;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 140px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .execute-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.3), transparent);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .execute-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 24px rgba(199,125,255,0.5); }
+        .execute-btn:hover::before { opacity: 1; }
+        .execute-btn:disabled { background: var(--text-dim); cursor: not-allowed; transform: none; box-shadow: none; color: #000; }
+
+        .examples-row {
+            padding: 0 20px 14px;
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .ex-label {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+            margin-right: 4px;
+        }
+
+        .ex-btn {
+            font-family: var(--mono);
+            font-size: 10px;
+            padding: 4px 10px;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-mid);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .ex-btn:hover {
+            border-color: var(--orange);
+            color: var(--orange);
+            background: rgba(240,112,32,0.7);
+        }
+
+        /* Orchestration panel — shows during processing */
+        .orchestration-panel {
+            display: none;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .orchestration-panel.visible { display: block; }
+
+        .orch-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(199,125,255,0.05);
+        }
+
+        .orch-spinner {
+            width: 14px; height: 14px;
+            border: 2px solid var(--border);
+            border-top-color: var(--purple);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .orch-title {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--purple);
+            letter-spacing: 2px;
+            flex: 1;
+        }
+
+        .orch-timer {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-mid);
+        }
+
+        .orch-steps {
+            padding: 14px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .orch-step {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0.3;
+            transition: all 0.4s;
+        }
+
+        .orch-step.active { opacity: 1; }
+        .orch-step.done { opacity: 0.7; }
+
+        .orch-step-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--text-dim);
+            flex-shrink: 0;
+            transition: all 0.3s;
+        }
+
+        .orch-step.active .orch-step-dot {
+            background: var(--purple);
+            box-shadow: 0 0 8px var(--purple);
+            animation: pulse 0.5s infinite;
+        }
+
+        .orch-step.done .orch-step-dot { background: var(--green); box-shadow: 0 0 4px var(--green); }
+
+        .orch-step-text {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-dim);
+        }
+
+        .orch-step.active .orch-step-text { color: var(--text); }
+        .orch-step.done .orch-step-text { color: var(--green); }
+
+        .orch-step-check { margin-left: auto; font-size: 10px; color: var(--green); display: none; }
+        .orch-step.done .orch-step-check { display: block; }
+
+        /* Agent results grid */
+        .agent-results-grid {
+            display: none;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .agent-results-grid.visible { display: grid; }
+
+        .agent-result-card {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            animation: slideUp 0.4s ease both;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .agent-result-card:nth-child(2) { animation-delay: 0.1s; }
+        .agent-result-card:nth-child(3) { animation-delay: 0.2s; }
+        .agent-result-card:nth-child(4) { animation-delay: 0.3s; }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .card-agent-name {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: 1px;
+            flex: 1;
+        }
+
+        .card-latency {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--text-dim);
+        }
+
+        .card-body {
+            padding: 12px 14px;
+            max-height: 160px;
+            overflow-y: auto;
+        }
+
+        .card-body::-webkit-scrollbar { width: 3px; }
+        .card-body::-webkit-scrollbar-track { background: transparent; }
+        .card-body::-webkit-scrollbar-thumb { background: var(--border); }
+
+        .card-text {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-mid);
+            line-height: 1.7;
+            white-space: pre-wrap;
+        }
+
+        /* Final response */
+        .final-response {
+            display: none;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            animation: slideUp 0.5s ease both;
+        }
+
+        .final-response.visible { display: block; }
+
+        .final-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 20px;
+            background: linear-gradient(90deg, rgba(199,125,255,0.08), transparent);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .final-label {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--purple);
+            letter-spacing: 2px;
+        }
+
+        .final-meta {
+            display: flex;
+            gap: 20px;
+        }
+
+        .meta-chip {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--mono);
+            font-size: 10px;
+        }
+
+        .meta-label { color: var(--text-dim); }
+        .meta-value { color: var(--purple); }
+
+        .final-body { padding: 24px 20px; }
+
+        .final-text {
+            font-family: var(--ui);
+            font-size: 15px;
+            font-weight: 400;
+            line-height: 1.85;
+            color: var(--text);
+            white-space: pre-wrap;
+        }
+
+        .agents-used-row {
+            padding: 14px 20px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .agents-label {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--text-dim);
+            letter-spacing: 2px;
+        }
+
+        .agent-badge {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 10px;
+            border: 1px solid;
+            font-family: var(--mono);
+            font-size: 9px;
+            letter-spacing: 1px;
+        }
+
+        .agent-badge-dot { width: 5px; height: 5px; border-radius: 50%; }
+
+        /* Error */
+        .error-panel {
+            display: none;
+            padding: 16px 20px;
+            background: rgba(255,107,107,0.08);
+            border: 1px solid rgba(255,107,107,0.3);
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--red);
+        }
+
+        .error-panel.visible { display: block; }
+
+        /* Metrics */
+        .metrics-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .metric-card {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            padding: 12px 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 2px;
+            background: var(--purple);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.6s ease;
+        }
+
+        .metric-card.active::after { transform: scaleX(1); }
+
+        .metric-label {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+
+        .metric-value {
+            font-family: var(--display);
+            font-size: clamp(18px, 2.5vw, 26px);
+            letter-spacing: 2px;
+            color: var(--text);
+            line-height: 1;
+        }
+
+        .metric-unit {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--text-mid);
+            margin-top: 3px;
+        }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            .network-layout { flex-direction: column; gap: 16px; }
+            .connections { flex-direction: row; }
+            .conn-line { width: 30px; }
+            .specialists-grid { flex-direction: row; flex-wrap: wrap; }
+            .specialist-node { min-width: 140px; }
+            .agent-results-grid { grid-template-columns: 1fr; }
+            .metrics-row { grid-template-columns: repeat(2, 1fr); }
+            .top-bar { flex-direction: column; gap: 10px; }
+            .nav-links { flex-wrap: wrap; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="hazard-stripe"></div>
+
+<div class="top-bar">
+    <div class="top-bar-left">
+        <div class="system-title">INDUSTRIAL AI COPILOT</div>
+        <div class="phase-badge">PHASE 4 — MULTI-AGENT</div>
+    </div>
+    <div class="nav-links">
+        <a href="/ui"            class="nav-link">⬡ RAG</a>
+        <a href="/agent-ui"      class="nav-link">◈ AGENT</a>
+        <a href="/multiagent-ui" class="nav-link active">⬡ ORCHESTRATION</a>
+        <a href="/ingest-ui"     class="nav-link">⬆ KNOWLEDGE</a>
+    </div>
+    <div class="status-row">
+        <div class="status-pill">
+            <div class="status-dot"></div>
+            4 SPECIALISTS ONLINE
+        </div>
+    </div>
+</div>
+
+<div class="main">
+
+    <!-- Hero -->
+    <div class="hero">
+        <div class="hero-label">// AUTONOMOUS MULTI-AGENT ORCHESTRATION</div>
+        <div class="hero-title">SUPERVISOR INTELLIGENCE</div>
+        <div class="hero-sub">SPECIALIST AGENTS · PARALLEL REASONING · SYNTHESIZED DECISIONS</div>
+    </div>
+
+    <!-- Metrics -->
+    <div class="metrics-row">
+        <div class="metric-card" id="metric-queries">
+            <div class="metric-label">QUERIES RUN</div>
+            <div class="metric-value" id="val-queries">0</div>
+            <div class="metric-unit">this session</div>
+        </div>
+        <div class="metric-card" id="metric-agents">
+            <div class="metric-label">AGENTS USED</div>
+            <div class="metric-value" id="val-agents">—</div>
+            <div class="metric-unit">last query</div>
+        </div>
+        <div class="metric-card" id="metric-latency">
+            <div class="metric-label">TOTAL LATENCY</div>
+            <div class="metric-value" id="val-latency">—</div>
+            <div class="metric-unit">seconds</div>
+        </div>
+        <div class="metric-card" id="metric-status">
+            <div class="metric-label">SYSTEM STATUS</div>
+            <div class="metric-value" id="val-status" style="font-size:14px;margin-top:4px;">READY</div>
+            <div class="metric-unit">orchestrator</div>
+        </div>
+    </div>
+
+    <!-- Agent network -->
+    <div class="agent-network">
+        <div class="network-label">// AGENT NETWORK — LIVE TOPOLOGY</div>
+        <div class="network-layout">
+
+            <!-- Supervisor -->
+            <div class="supervisor-node">
+                <div class="supervisor-hex">
+                    <span class="supervisor-icon">◉</span>
+                </div>
+                <div class="supervisor-label">SUPERVISOR</div>
+            </div>
+
+            <!-- Connection lines -->
+            <div class="connections" id="connections">
+                <div class="conn-line" id="conn-0"></div>
+                <div class="conn-line" id="conn-1"></div>
+                <div class="conn-line" id="conn-2"></div>
+                <div class="conn-line" id="conn-3"></div>
+            </div>
+
+            <!-- Specialists -->
+            <div class="specialists-grid">
+                <div class="specialist-node" id="node-retrieval"
+                     style="--node-color:#00d4ff; --node-rgb:0,212,255;">
+                    <div class="node-indicator"></div>
+                    <div class="node-info">
+                        <div class="node-name">RETRIEVAL AGENT</div>
+                        <div class="node-role">Documentation search · Citations</div>
+                    </div>
+                    <div class="node-status" id="status-retrieval">IDLE</div>
+                </div>
+                <div class="specialist-node" id="node-telemetry"
+                     style="--node-color:#00e676; --node-rgb:0,230,118;">
+                    <div class="node-indicator"></div>
+                    <div class="node-info">
+                        <div class="node-name">TELEMETRY AGENT</div>
+                        <div class="node-role">Live equipment monitoring</div>
+                    </div>
+                    <div class="node-status" id="status-telemetry">IDLE</div>
+                </div>
+                <div class="specialist-node" id="node-analysis"
+                     style="--node-color:#ffd740; --node-rgb:255,215,64;">
+                    <div class="node-indicator"></div>
+                    <div class="node-info">
+                        <div class="node-name">ANALYSIS AGENT</div>
+                        <div class="node-role">Spec checks · Calculations</div>
+                    </div>
+                    <div class="node-status" id="status-analysis">IDLE</div>
+                </div>
+                <div class="specialist-node" id="node-safety"
+                     style="--node-color:#ff6b6b; --node-rgb:255,107,107;">
+                    <div class="node-indicator"></div>
+                    <div class="node-info">
+                        <div class="node-name">SAFETY AGENT</div>
+                        <div class="node-role">Risk assessment · Compliance</div>
+                    </div>
+                    <div class="node-status" id="status-safety">IDLE</div>
+                </div>
+            </div>
+
+            <!-- Report connection -->
+            <div class="report-connection">
+                <div class="report-line" id="report-line"></div>
+            </div>
+
+            <!-- Report node -->
+            <div class="report-node">
+                <div class="report-hex" id="report-hex">
+                    <span class="report-icon">📋</span>
+                </div>
+                <div class="report-label">REPORT<br>AGENT</div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Query input -->
+    <div class="query-panel">
+        <div class="query-header">
+            <span class="query-label">// ORCHESTRATION QUERY</span>
+            <span class="query-hint">Supervisor auto-selects specialists · ENTER to execute</span>
+        </div>
+        <div class="query-body">
+            <textarea
+                id="questionInput"
+                placeholder="Ask a complex question — the supervisor will coordinate specialist agents to answer it..."
+                onkeydown="handleKey(event)"
+            ></textarea>
+            <button class="execute-btn" id="submitBtn" onclick="submitQuery()">
+                ORCHESTRATE
+            </button>
+        </div>
+        <div class="examples-row">
+            <span class="ex-label">TRY →</span>
+            <button class="ex-btn" onclick="setQuery(this.textContent)">Generate full plant health report</button>
+            <button class="ex-btn" onclick="setQuery(this.textContent)">Diagnose pump-001 fault and recommend action</button>
+            <button class="ex-btn" onclick="setQuery(this.textContent)">Audit all equipment against safety standards</button>
+            <button class="ex-btn" onclick="setQuery(this.textContent)">Is it safe to continue operating motor-001?</button>
+            <button class="ex-btn" onclick="setQuery(this.textContent)">What maintenance is overdue across all assets?</button>
+        </div>
+    </div>
+
+    <!-- Orchestration progress -->
+    <div class="orchestration-panel" id="orchPanel">
+        <div class="orch-header">
+            <div class="orch-spinner"></div>
+            <span class="orch-title">// MULTI-AGENT ORCHESTRATION IN PROGRESS</span>
+            <span class="orch-timer" id="orchTimer">0.0s</span>
+        </div>
+        <div class="orch-steps">
+            <div class="orch-step" id="os1">
+                <div class="orch-step-dot"></div>
+                <span class="orch-step-text">Supervisor analyzing query intent</span>
+                <span class="orch-step-check">✓</span>
+            </div>
+            <div class="orch-step" id="os2">
+                <div class="orch-step-dot"></div>
+                <span class="orch-step-text">Selecting specialist agents</span>
+                <span class="orch-step-check">✓</span>
+            </div>
+            <div class="orch-step" id="os3">
+                <div class="orch-step-dot"></div>
+                <span class="orch-step-text">Dispatching to specialists</span>
+                <span class="orch-step-check">✓</span>
+            </div>
+            <div class="orch-step" id="os4">
+                <div class="orch-step-dot"></div>
+                <span class="orch-step-text">Collecting specialist findings</span>
+                <span class="orch-step-check">✓</span>
+            </div>
+            <div class="orch-step" id="os5">
+                <div class="orch-step-dot"></div>
+                <span class="orch-step-text">Report Agent synthesizing response</span>
+                <span class="orch-step-check">✓</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error -->
+    <div class="error-panel" id="errorPanel"></div>
+
+    <!-- Agent result cards -->
+    <div class="agent-results-grid" id="agentResultsGrid"></div>
+
+    <!-- Final synthesized response -->
+    <div class="final-response" id="finalResponse">
+        <div class="final-header">
+            <span class="final-label">// SYNTHESIZED RESPONSE — REPORT AGENT</span>
+            <div class="final-meta">
+                <div class="meta-chip">
+                    <span class="meta-label">AGENTS</span>
+                    <span class="meta-value" id="respAgents">—</span>
+                </div>
+                <div class="meta-chip">
+                    <span class="meta-label">TIME</span>
+                    <span class="meta-value" id="respTime">—</span>
+                </div>
+            </div>
+        </div>
+        <div class="final-body">
+            <div class="final-text" id="finalText"></div>
+        </div>
+        <div class="agents-used-row">
+            <span class="agents-label">// AGENTS INVOKED</span>
+            <div id="agentBadges"></div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const API = window.location.origin;
+    let sessionQueries = 0;
+    let timerInterval  = null;
+    let startTime      = null;
+    let stepTimers     = [];
+
+    const AGENT_COLORS = {
+        "Retrieval Agent": "#00d4ff",
+        "Telemetry Agent": "#00e676",
+        "Analysis Agent":  "#ffd740",
+        "Safety Agent":    "#ff6b6b",
+        "Report Agent":    "#c77dff",
+    };
+
+    const NODE_MAP = {
+        "Retrieval Agent": "node-retrieval",
+        "Telemetry Agent": "node-telemetry",
+        "Analysis Agent":  "node-analysis",
+        "Safety Agent":    "node-safety",
+    };
+
+    const STATUS_MAP = {
+        "Retrieval Agent": "status-retrieval",
+        "Telemetry Agent": "status-telemetry",
+        "Analysis Agent":  "status-analysis",
+        "Safety Agent":    "status-safety",
+    };
+
+    function setQuery(text) {
+        document.getElementById('questionInput').value = text;
+        document.getElementById('questionInput').focus();
+    }
+
+    function handleKey(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            submitQuery();
+        }
+    }
+
+    function resetNetwork() {
+        ['node-retrieval','node-telemetry','node-analysis','node-safety'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) { el.classList.remove('active','complete'); }
+        });
+        ['status-retrieval','status-telemetry','status-analysis','status-safety'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = 'IDLE';
+        });
+        ['conn-0','conn-1','conn-2','conn-3'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('active');
+        });
+        const reportHex  = document.getElementById('report-hex');
+        const reportLine = document.getElementById('report-line');
+        if (reportHex)  reportHex.classList.remove('active');
+        if (reportLine) reportLine.classList.remove('active');
+    }
+
+    function activateAgentNodes(agentNames) {
+        agentNames.forEach((name, i) => {
+            const nodeId   = NODE_MAP[name];
+            const statusId = STATUS_MAP[name];
+            const connId   = `conn-${i}`;
+
+            setTimeout(() => {
+                const node   = document.getElementById(nodeId);
+                const status = document.getElementById(statusId);
+                const conn   = document.getElementById(connId);
+
+                if (node)   node.classList.add('active');
+                if (status) status.textContent = 'WORKING';
+                if (conn)   conn.classList.add('active');
+            }, i * 800);
+        });
+    }
+
+    function completeAgentNodes(agentResults) {
+        agentResults.forEach(result => {
+            const nodeId   = NODE_MAP[result.agent_name];
+            const statusId = STATUS_MAP[result.agent_name];
+            const node     = document.getElementById(nodeId);
+            const status   = document.getElementById(statusId);
+
+            if (node) {
+                node.classList.remove('active');
+                node.classList.add('complete');
+            }
+            if (status) status.textContent = 'DONE';
+        });
+
+        // Activate report agent
+        setTimeout(() => {
+            const reportHex  = document.getElementById('report-hex');
+            const reportLine = document.getElementById('report-line');
+            if (reportHex)  reportHex.classList.add('active');
+            if (reportLine) reportLine.classList.add('active');
+        }, 400);
+    }
+
+    function startOrchAnimation() {
+        ['os1','os2','os3','os4','os5'].forEach(id => {
+            document.getElementById(id).classList.remove('active','done');
+        });
+
+        stepTimers = [];
+        const steps = ['os1','os2','os3','os4','os5'];
+        const delays = [0, 2000, 5000, 10000, 16000];
+
+        delays.forEach((delay, i) => {
+            stepTimers.push(setTimeout(() => {
+                if (i > 0) {
+                    document.getElementById(steps[i-1]).classList.remove('active');
+                    document.getElementById(steps[i-1]).classList.add('done');
+                }
+                document.getElementById(steps[i]).classList.add('active');
+            }, delay));
+        });
+    }
+
+    function startTimer() {
+        startTime = Date.now();
+        timerInterval = setInterval(() => {
+            const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+            document.getElementById('orchTimer').textContent = elapsed + 's';
+        }, 100);
+    }
+
+    function stopTimer() {
+        clearInterval(timerInterval);
+        stepTimers.forEach(t => clearTimeout(t));
+    }
+
+    function renderAgentCards(agentResults) {
+        const grid = document.getElementById('agentResultsGrid');
+        grid.innerHTML = '';
+
+        agentResults.forEach(result => {
+            const color = AGENT_COLORS[result.agent_name] || '#00d4ff';
+            const card  = document.createElement('div');
+            card.className = 'agent-result-card';
+            card.innerHTML = `
+                <div class="card-header">
+                    <div class="card-dot" style="background:${color};box-shadow:0 0 6px ${color};"></div>
+                    <span class="card-agent-name" style="color:${color};">${result.agent_name.toUpperCase()}</span>
+                    <span class="card-latency">${result.latency}s</span>
+                </div>
+                <div class="card-body">
+                    <div class="card-text">${result.response || 'No response'}</div>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+
+        grid.classList.add('visible');
+    }
+
+    function renderAgentBadges(agentsUsed) {
+        const container = document.getElementById('agentBadges');
+        container.innerHTML = '';
+        container.style.display = 'flex';
+        container.style.gap = '8px';
+        container.style.flexWrap = 'wrap';
+
+        agentsUsed.forEach(name => {
+            const color = AGENT_COLORS[name] || '#00d4ff';
+            const badge = document.createElement('div');
+            badge.className = 'agent-badge';
+            badge.style.borderColor = color;
+            badge.style.color = color;
+            badge.innerHTML = `<div class="agent-badge-dot" style="background:${color};"></div>${name.toUpperCase()}`;
+            container.appendChild(badge);
+        });
+
+        // Always add Report Agent
+        const reportBadge = document.createElement('div');
+        reportBadge.className = 'agent-badge';
+        reportBadge.style.borderColor = '#c77dff';
+        reportBadge.style.color = '#c77dff';
+        reportBadge.innerHTML = `<div class="agent-badge-dot" style="background:#c77dff;"></div>REPORT AGENT`;
+        container.appendChild(reportBadge);
+    }
+
+    function updateMetrics(agentsUsed, totalLatency) {
+        sessionQueries++;
+        document.getElementById('val-queries').textContent  = sessionQueries;
+        document.getElementById('val-agents').textContent   = agentsUsed.length + 1; // +1 for report
+        document.getElementById('val-latency').textContent  = totalLatency + 's';
+        document.getElementById('val-status').textContent   = 'COMPLETE';
+
+        ['metric-queries','metric-agents','metric-latency','metric-status'].forEach(id => {
+            document.getElementById(id).classList.add('active');
+        });
+    }
+
+    async function submitQuery() {
+        const question = document.getElementById('questionInput').value.trim();
+        if (!question) return;
+
+        // Reset UI
+        document.getElementById('submitBtn').disabled = true;
+        document.getElementById('finalResponse').classList.remove('visible');
+        document.getElementById('errorPanel').classList.remove('visible');
+        document.getElementById('agentResultsGrid').classList.remove('visible');
+        document.getElementById('agentResultsGrid').innerHTML = '';
+        document.getElementById('orchPanel').classList.add('visible');
+        document.getElementById('val-status').textContent = 'WORKING';
+        resetNetwork();
+        startOrchAnimation();
+        startTimer();
+
+        try {
+            const res = await fetch(`${API}/multiagent`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question })
+            });
+
+            if (!res.ok) throw new Error(`API error: ${res.status}`);
+            const data = await res.json();
+
+            stopTimer();
+
+            // Complete all orch steps
+            ['os1','os2','os3','os4','os5'].forEach(id => {
+                document.getElementById(id).classList.add('done');
+                document.getElementById(id).classList.remove('active');
+            });
+
+            // Animate agent network
+            activateAgentNodes(data.agents_used);
+            setTimeout(() => completeAgentNodes(data.agent_results), data.agents_used.length * 800 + 400);
+
+            // Render agent result cards
+            setTimeout(() => {
+                renderAgentCards(data.agent_results);
+            }, 600);
+
+            // Show final response
+            setTimeout(() => {
+                document.getElementById('orchPanel').classList.remove('visible');
+                document.getElementById('finalText').textContent    = data.final_answer;
+                document.getElementById('respAgents').textContent   = data.agents_used.length + 1;
+                document.getElementById('respTime').textContent     = data.total_latency + 's';
+                renderAgentBadges(data.agents_used);
+                updateMetrics(data.agents_used, data.total_latency);
+                document.getElementById('finalResponse').classList.add('visible');
+            }, 1200);
+
+        } catch(e) {
+            stopTimer();
+            document.getElementById('orchPanel').classList.remove('visible');
+            const err = document.getElementById('errorPanel');
+            err.textContent = `ORCHESTRATION ERROR: ${e.message}`;
+            err.classList.add('visible');
+            document.getElementById('val-status').textContent = 'ERROR';
+            resetNetwork();
+        } finally {
+            document.getElementById('submitBtn').disabled = false;
+        }
+    }
+</script>
+
+</body>
+</html>

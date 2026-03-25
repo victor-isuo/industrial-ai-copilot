@@ -15,6 +15,7 @@ from src.core.retriever import create_hybrid_retriever
 from src.core.reranker import CohereReranker
 from src.core.rag_pipeline import RAGPipeline
 from src.agents.maintenance_agent import MaintenanceAgent
+from src.agents.multi_agent_system import initialize_multi_agent_system, get_multi_agent_system
 from src.api.ingest_router import router as ingest_router, set_vector_store
 from src.api.telemetry_api import get_equipment_telemetry as fetch_telemetry, list_equipment
 
@@ -22,9 +23,9 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Global instances
-pipeline = None
-agent = None
-vector_store = None # Kept globally so ingest router can update it live
+pipeline     = None
+agent        = None
+vector_store = None  # Kept globally so ingest router can update it live
 
 
 async def initialize_pipeline():
@@ -32,7 +33,7 @@ async def initialize_pipeline():
 
     try:
         logger.info("Initializing pipeline in background...")
-        docs = load_documents()
+        docs   = load_documents()
         chunks = chunk_documents(docs)
 
         if not chunks:
@@ -46,13 +47,17 @@ async def initialize_pipeline():
         set_vector_store(vector_store)
 
         retriever = create_hybrid_retriever(vector_store, chunks)
-        reranker = CohereReranker(top_n=5)
-        pipeline = RAGPipeline(retriever=retriever, reranker=reranker)
+        reranker  = CohereReranker(top_n=5)
+        pipeline  = RAGPipeline(retriever=retriever, reranker=reranker)
         logger.info("Pipeline ready. System operational.")
 
-        # Initialize agent
+        # Initialize single agent
         agent = MaintenanceAgent(pipeline=pipeline)
         logger.info("Maintenance Agent ready.")
+
+        # Initialize multi-agent system
+        initialize_multi_agent_system(pipeline)
+        logger.info("Multi-Agent System ready.")
 
     except Exception as e:
         logger.error(f"Pipeline initialization failed: {e}")
@@ -108,6 +113,11 @@ async def ingest_frontend():
     return FileResponse("static/ingest.html")
 
 
+@app.get("/multiagent-ui")
+async def multiagent_frontend():
+    return FileResponse("static/multiagent.html")
+
+
 # --- Request/Response Models ---
 class QueryRequest(BaseModel):
     question: str
@@ -145,21 +155,21 @@ class AgentResponse(BaseModel):
 @app.get("/")
 async def root():
     return {
-        "name": "Industrial AI Copilot",
+        "name":    "Industrial AI Copilot",
         "version": "3.0.0",
-        "status": "operational",
-        "docs": "/docs",
-        "phase": "Phase 3 — Ingestion Pipeline + Telemetry + Multimodal"
+        "status":  "operational",
+        "docs":    "/docs",
+        "phase":   "Phase 3 — Ingestion Pipeline + Telemetry + Multimodal"
     }
 
 
 @app.get("/health")
 async def health():
     return {
-        "status": "healthy",
+        "status":          "healthy",
         "pipeline_loaded": pipeline is not None,
-        "agent_loaded": agent is not None,
-        "vector_store": vector_store is not None,
+        "agent_loaded":    agent is not None,
+        "vector_store":    vector_store is not None,
     }
 
 
@@ -182,9 +192,9 @@ async def query(request: QueryRequest):
         )
 
     try:
-        start = time.time()
+        start    = time.time()
         response = pipeline.query(request.question)
-        elapsed = round(time.time() - start, 2)
+        elapsed  = round(time.time() - start, 2)
 
         return QueryResponse(
             answer=response.answer,
@@ -208,7 +218,7 @@ async def list_documents():
         docs = list(Path(".").glob("*.pdf"))
     return {
         "indexed_documents": [d.name for d in docs],
-        "total": len(docs)
+        "total":             len(docs)
     }
 
 
@@ -245,7 +255,7 @@ async def run_agent(request: AgentRequest):
             img_dir.mkdir(parents=True, exist_ok=True)
 
             # Decode and save image
-            img_id = str(uuid.uuid4())[:8]
+            img_id   = str(uuid.uuid4())[:8]
             img_data = request.image_base64
 
             # Handle data URI format
@@ -253,8 +263,8 @@ async def run_agent(request: AgentRequest):
                 header, b64 = img_data.split(",", 1)
                 ext = "jpg" if "jpeg" in header else "png"
             else:
-                b64 = img_data
-                ext = "jpg"
+                b64  = img_data
+                ext  = "jpg"
 
             img_path = img_dir / f"upload_{img_id}.{ext}"
             img_path.write_bytes(base64.b64decode(b64))
@@ -269,7 +279,7 @@ async def run_agent(request: AgentRequest):
                 f"analysis_type='{request.analysis_type}'"
             )
 
-        result = agent.run(question)
+        result  = agent.run(question)
         elapsed = round(time.time() - start, 2)
 
         return AgentResponse(
@@ -289,9 +299,9 @@ async def telemetry_overview():
     """Get health overview of all equipment in the plant."""
     equipment = list_equipment()
     return {
-        "equipment": equipment,
+        "equipment":    equipment,
         "total_assets": len(equipment),
-        "alerts": sum(e["alert_count"] for e in equipment),
+        "alerts":       sum(e["alert_count"] for e in equipment),
     }
 
 
@@ -306,6 +316,71 @@ async def telemetry_readings(equipment_id: str):
             detail=f"Equipment '{equipment_id}' not found."
         )
     return data
+
+
+# ── Multi-Agent Endpoints ─────────────────────────────────────────────────────
+
+class MultiAgentRequest(BaseModel):
+    question: str
+
+
+@app.post("/multiagent")
+async def run_multi_agent(request: MultiAgentRequest):
+    """
+    Run the multi-agent orchestration system.
+    Supervisor delegates to specialist agents and synthesizes results.
+    """
+    mas = get_multi_agent_system()
+
+    if not mas:
+        raise HTTPException(
+            status_code=503,
+            detail="Multi-agent system not initialized yet. Please wait and try again."
+        )
+
+    if not request.question.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Question cannot be empty."
+        )
+
+    try:
+        result = mas.run(request.question)
+        return {
+            "final_answer":  result.final_answer,
+            "agent_results": [
+                {
+                    "agent_name": r.agent_name,
+                    "role":       r.role,
+                    "response":   r.response,
+                    "latency":    r.latency,
+                    "status":     r.status,
+                    "color":      r.color,
+                }
+                for r in result.agent_results
+            ],
+            "agents_used":   result.agents_used,
+            "total_latency": result.total_latency,
+            "query":         result.query,
+        }
+
+    except Exception as e:
+        logger.error(f"Multi-agent query failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/multiagent/agents")
+async def list_agents():
+    """List available specialist agents and their roles."""
+    return {
+        "agents": [
+            {"name": "Retrieval Agent", "role": "Documentation search and citation",       "color": "#00d4ff"},
+            {"name": "Telemetry Agent", "role": "Live equipment monitoring",                "color": "#00e676"},
+            {"name": "Analysis Agent",  "role": "Engineering calculations and spec checks", "color": "#ffd740"},
+            {"name": "Safety Agent",    "role": "Risk assessment and safety compliance",    "color": "#ff6b6b"},
+            {"name": "Report Agent",    "role": "Findings synthesis and final response",    "color": "#c77dff"},
+        ]
+    }
 
 
 if __name__ == "__main__":
