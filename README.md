@@ -8,53 +8,51 @@ pinned: false
 ---
 
 # ⚙️ Industrial AI Copilot
+### AI Fault Diagnosis System for Industrial Equipment
 
-A production-grade RAG and agentic AI platform for industrial engineering documentation.
-Built to demonstrate end-to-end LLM system design — from hybrid retrieval to autonomous
-multi-tool reasoning, live telemetry integration, multimodal vision, document ingestion
-pipelines, and MCP connectivity.
+A production-grade agentic AI platform built across four progressive phases —
+from hybrid document retrieval to autonomous multi-agent fault diagnosis.
 
 ## 🔴 Live Demo
 
 | Interface | URL | Description |
 |-----------|-----|-------------|
+| Multi-Agent | https://victorisuo-industrial-ai-copilot.hf.space/multiagent-ui | Supervisor + 4 specialist agents |
+| Agent Mode | https://victorisuo-industrial-ai-copilot.hf.space/agent-ui | 9-tool autonomous agent |
 | RAG Search | https://victorisuo-industrial-ai-copilot.hf.space/ui | Hybrid retrieval over 27 documents |
-| Agent Mode | https://victorisuo-industrial-ai-copilot.hf.space/agent-ui | Autonomous 9-tool reasoning agent |
-| Knowledge Base | https://victorisuo-industrial-ai-copilot.hf.space/ingest-ui | Live document ingestion dashboard |
+| Knowledge Base | https://victorisuo-industrial-ai-copilot.hf.space/ingest-ui | Live document ingestion |
 
 ---
 
 ## What This System Does
 
-Industrial environments generate massive volumes of technical documentation —
-equipment manuals, safety datasheets, maintenance guides, compliance standards.
-At the same time, physical equipment generates continuous sensor data and visual
-conditions that need to be interpreted against those documents in real time.
+Industrial environments generate massive volumes of technical documentation and continuous sensor data. Engineers need to query documents, monitor live equipment, diagnose faults from images, and make safety decisions — simultaneously.
 
-This platform makes that documentation queryable, reasoned over, and actionable
-through a progressively capable AI system — from hybrid retrieval to live telemetry
-diagnosis, equipment image analysis, and external system integration via MCP.
+This system makes that possible through a progressively capable AI architecture that goes from document retrieval to autonomous multi-agent fault diagnosis.
 
 ---
 
-## Architecture Overview
+## System Architecture
 
 ```
 PDF Upload ──────────────────────────────────────────────┐
                                                           ↓
-Equipment Photo ──→ Gemini 2.5 Flash Vision     Ingestion Pipeline
+Equipment Photo ──→ Gemini 2.5 Flash            Ingestion Pipeline
                                                           ↓
 Telemetry API ──→ MCP Tool                     Chunking + Embedding
                                                           ↓
                                                       ChromaDB
                                                           ↓
-Engineer Query ──────────────────────→ LangGraph Agent (9 Tools)
+Engineer Query ──────────────────────→ Supervisor Agent
                                                           ↓
-              ┌──────────────────────────────────────────────────┐
-              ↓          ↓           ↓          ↓           ↓
-         RAG Search  Spec Checker  Telemetry  Vision      MCP Server
-              ↓          ↓           ↓          ↓           ↓
-              └────────── Cited, Actionable Response ──────────┘
+              ┌───────────────────────────────────────────────────┐
+              ↓           ↓              ↓              ↓
+       Retrieval      Telemetry       Analysis        Safety
+         Agent          Agent           Agent          Agent
+              ↓           ↓              ↓              ↓
+              └──────── Report Agent (synthesis) ────────┘
+                                  ↓
+                     Cited, Actionable Response
 ```
 
 ---
@@ -64,22 +62,20 @@ Engineer Query ─────────────────────�
 | Phase | Capability | Status |
 |-------|-----------|--------|
 | 1 | Hybrid RAG retrieval engine with Cohere reranking | ✅ Complete |
-| 2 | LangGraph agentic layer — 4 tools, 90% eval accuracy | ✅ Complete |
+| 2 | LangGraph agentic layer — 9 tools, 90% eval accuracy | ✅ Complete |
 | 3A | Live document ingestion pipeline | ✅ Complete |
 | 3B | Equipment telemetry with fault detection | ✅ Complete |
-| 3C | Multimodal vision — equipment photos, gauges, P&ID diagrams | ✅ Complete |
+| 3C | Multimodal vision — gauges, nameplates, faults, P&ID | ✅ Complete |
 | 3D | MCP server + client integration | ✅ Complete |
-| 4 | Multi-agent orchestration | 📅 Planned |
+| 4 | Multi-agent orchestration — supervisor + 4 specialists | ✅ Complete |
 
 ---
 
 ## Phase 1 — Hybrid RAG Engine
 
-**Problem:** Standard semantic search fails on industrial documentation containing
-exact codes, part numbers, and standards (e.g. ISO 9001:2000, NFPA 70E).
+**Problem:** Standard semantic search fails on industrial documentation containing exact codes, part numbers, and standards (ISO 9001, NFPA 70E).
 
-**Solution:** Hybrid retrieval combining dense embeddings with BM25 sparse search,
-followed by Cohere neural reranking.
+**Solution:** Hybrid retrieval combining dense embeddings with BM25 sparse search, followed by Cohere neural reranking.
 
 ```
 PDF Loader → Recursive Chunker → ChromaDB + BM25
@@ -92,53 +88,37 @@ PDF Loader → Recursive Chunker → ChromaDB + BM25
 - 5,091 chunks in vector store
 - Source citations include document name and page number on every response
 
-**Key architectural decisions:**
-- Chunk size 512, overlap 100 — optimized for precise standard retrieval
+**Key decisions:**
+- Chunk size 512, overlap 100 — optimised for precise standard retrieval
 - Hybrid weights 0.5/0.5 — balanced semantic and keyword matching
-- k=8 retrieval candidates feeding reranker
+- k=8 candidates feeding reranker
 - Structured Pydantic response with confidence scoring and explicit caveat on low confidence
 
 ---
 
 ## Phase 2 — LangGraph Agentic Layer
 
-**Problem:** Complex engineering queries require multi-step reasoning,
-not single-shot retrieval.
+**Problem:** Complex engineering queries require multi-step reasoning, not single-shot retrieval.
 
-**Solution:** LangGraph stateful agent that autonomously plans and executes
-tool sequences based on query intent.
+**Solution:** LangGraph stateful agent with 9 tools that autonomously plans and executes tool sequences.
 
-```
-User Query → LangGraph Agent → Tool Selection → Execution → Structured Response
-```
-
-**Tools (Phase 2):**
-
-| Tool | Purpose |
-|------|---------|
-| `search_industrial_documentation` | Hybrid RAG search with cited page numbers |
-| `spec_checker` | Compare sensor readings against specs with NORMAL/CAUTION/WARNING/CRITICAL severity |
-| `engineering_calculator` | Safe mathematical computation for engineering analysis |
-| `unit_converter` | Industrial unit conversions — pressure, flow, temperature, power, torque |
-
-**Example agent workflow:**
+**Example:**
 
 Query: *"Pump discharge pressure 600 psi. Safety relief valve set at 500 psi."*
 
 ```
 1. Agent identifies spec comparison needed
 2. Calls spec_checker autonomously
-3. Computes 20% deviation above safety relief valve
-4. Classifies severity: CRITICAL
-5. Returns: "Immediate shutdown required. Do not continue operation."
-   Latency: 1.6s
+3. Computes 20% deviation above safety limit
+4. Classifies: CRITICAL
+5. Returns: "Immediate shutdown required." — Latency: 1.6s
 ```
 
 ---
 
 ## Evaluation Results — Phase 2
 
-Custom evaluation framework built from scratch across 30 hand-crafted test cases.
+Custom evaluation framework across 30 hand-crafted test cases.
 
 | Category | Cases | Passed | Accuracy | Avg Score |
 |----------|-------|--------|----------|-----------|
@@ -151,170 +131,91 @@ Custom evaluation framework built from scratch across 30 hand-crafted test cases
 **Avg latency: 3.09s**
 
 **Scoring methodology (custom — not RAGAS):**
-- Tool Selection Accuracy (40%) — did the agent call the correct tool?
-- Keyword Match Score (40%) — did the response contain expected keywords?
-- Severity Classification (20%) — correct NORMAL/CAUTION/WARNING/CRITICAL for spec cases?
-- Composite pass threshold: ≥ 0.70
+- Tool Selection Accuracy (40%)
+- Keyword Match Score (40%)
+- Severity Classification (20%)
+- Pass threshold: ≥ 0.70
 
-RAGAS was evaluated but not used — it covers retrieval quality only.
-Our custom metrics cover the full agentic behavior including tool selection and severity reasoning.
+RAGAS evaluates retrieval quality only. Our custom metrics cover the full agentic behaviour including tool selection and severity reasoning — which RAGAS cannot measure.
 
 ---
 
 ## Phase 3 — Advanced Systems Integration
 
-### 3A — Live Document Ingestion Pipeline
+### 3A — Live Document Ingestion
 
-**Problem:** Real production systems need live knowledge base updates —
-not a static index that requires server restarts.
-
-**Solution:** A `/ingest` API endpoint that accepts PDF uploads, processes them
-in the background, and updates the ChromaDB index without any downtime.
+Real production systems need live knowledge base updates without downtime.
 
 ```
 PDF Upload → SHA256 Duplicate Check → Background Processing
-          → Chunking → Embedding → Live ChromaDB Update
-          → Job Status Polling → Completion Notification
+          → Chunking → Embedding → Live ChromaDB Update → Status Polling
 ```
 
-**Capabilities:**
-- Upload any PDF via drag-and-drop UI or API
-- Background processing — endpoint returns immediately with job_id
-- Real-time status polling through 4 stages: checking → saving → chunking → embedding
-- SHA256 duplicate detection — same document never indexed twice
-- Automatic filename conflict resolution
-- Failed ingestion cleanup — partial files removed on error
-- Full ingestion history with timestamps and chunk counts
+- Upload any PDF via drag-and-drop or API
+- Background processing — endpoint returns job_id immediately
+- Real-time status through 4 stages: checking → saving → chunking → embedding
+- Duplicate detection — same document never indexed twice
 
-**Endpoints:**
-- `POST /ingest` — upload and index a PDF
-- `GET /ingest/status/{job_id}` — poll ingestion progress
-- `GET /ingest/jobs` — full ingestion history
-- `GET /ingest/documents` — list all indexed documents
+**Endpoints:** `POST /ingest` · `GET /ingest/status/{job_id}` · `GET /ingest/documents`
 
 ---
 
-### 3B — Live Equipment Telemetry with Fault Detection
+### 3B — Live Telemetry with Fault Detection
 
-**Problem:** Real industrial AI systems don't just answer questions —
-they monitor live equipment state and detect developing faults.
+AI fault diagnosis systems monitor live equipment state and detect developing faults.
 
-**Solution:** A simulated telemetry engine modeling realistic sensor behavior
-with time-based drift and fault injection across 4 equipment assets.
-
-```
-Equipment Registry → Sensor Simulation → Drift Engine → Fault Detection
-                  → Severity Classification → Agent Tool → Diagnosis
-```
-
-**Equipment modeled:**
-
-| Asset | Type | Parameters Monitored |
-|-------|------|---------------------|
-| pump-001 | Gear Pump | Pressure, flow, temperature, vibration, shaft speed |
-| pump-002 | Centrifugal Pump | Pressure, suction, flow, temperature, vibration |
-| motor-001 | Electric Motor | Winding temp, bearing temp, current, vibration, insulation |
-| compressor-001 | Reciprocating Compressor | Discharge pressure, oil pressure, temperature, RPM |
-
-**Active fault scenarios (time-drifting):**
-- pump-001 — Developing bearing wear (vibration drifting upward)
-- pump-002 — Suction cavitation (suction pressure dropping)
-- motor-001 — Bearing overheating (temperature rising)
-- compressor-001 — Oil pressure degradation (pressure dropping)
+| Asset | Type | Active Fault Scenario |
+|-------|------|----------------------|
+| pump-001 | Gear Pump | Bearing wear — vibration drifting |
+| pump-002 | Centrifugal Pump | Suction cavitation — pressure dropping |
+| motor-001 | Electric Motor | Bearing overheating — temperature rising |
+| compressor-001 | Reciprocating Compressor | Oil pressure degradation |
 
 **Full diagnosis workflow:**
 ```
 Query: "Diagnose pump-001"
-  → Agent calls get_equipment_telemetry(pump-001)
-  → Detects developing bearing wear, vibration drifting 4.9 minutes
-  → Agent calls search_industrial_documentation for bearing inspection procedure
-  → Returns: fault diagnosis + maintenance procedure + page citations
+→ Agent fetches live telemetry
+→ Detects bearing wear drifting 4.9 minutes
+→ Searches documentation for inspection procedure
+→ Returns: fault diagnosis + cited procedure
+   Latency: 3s
 ```
 
-> In production, this module is replaced by calls to a plant historian API
-> (OSIsoft PI, InfluxDB), MQTT broker, or SCADA system REST endpoint.
-> The agent tool interface is identical regardless of data source.
-
-**New tools added:**
-
-| Tool | Purpose |
-|------|---------|
-| `get_equipment_telemetry` | Live sensor readings with severity classification |
-| `list_all_equipment` | Plant-wide health overview with alert counts |
+> In production, this module connects to a plant historian API (OSIsoft PI, InfluxDB),
+> MQTT broker, or SCADA system. The agent tool interface is identical regardless of source.
 
 ---
 
 ### 3C — Multimodal Vision
 
-**Problem:** Field engineers encounter equipment issues they can photograph
-but struggle to diagnose without documentation access.
-
-**Solution:** Gemini 2.5 Flash vision integration giving the agent
-the ability to see and reason over equipment images.
-
-**Four vision capabilities:**
+Field engineers photograph equipment. The agent analyses the image.
 
 | Mode | Use Case |
 |------|---------|
-| Gauge Reading | Photograph a pressure/temperature gauge — agent reads value and checks against spec |
-| Nameplate Extraction | Photograph equipment nameplate — agent extracts model, ratings, serial number |
-| Fault Diagnosis | Photograph damaged equipment — agent classifies fault type and severity |
-| P&ID Analysis | Photograph piping diagram — agent identifies components and retrieves procedures |
+| Gauge Reading | Read pressure/temperature gauge → check against spec |
+| Nameplate Extraction | Extract model, ratings, serial number |
+| Fault Diagnosis | Classify fault type, severity, retrieve repair procedure |
+| P&ID Analysis | Identify components, retrieve operating procedures |
 
-**Example workflow — gauge reading:**
+Model: Gemini 2.5 Flash
+
+**Example:**
 ```
-Engineer uploads gauge photo + "Is this reading safe?"
-  → Agent calls analyze_gauge_reading(image_path, analysis_type='gauge')
-  → Gemini 2.5 Flash reads: 450 psi
-  → Agent calls spec_checker(450, 380, 'discharge pressure', 'psi')
-  → Returns: WARNING — 18.4% above specification. Urgent inspection needed.
+Engineer uploads gauge photo + "Is this reading safe for pump-001?"
+→ Agent reads: 450 psi
+→ Agent checks against pump-001 spec: 380 psi normal max
+→ Returns: WARNING — 18.4% above specification
 ```
-
-**Example workflow — fault diagnosis:**
-```
-Engineer uploads photo of leaking pump seal
-  → Agent calls analyze_equipment_image(image_path, analysis_type='fault')
-  → Gemini identifies: mechanical seal failure, oil leakage, severity WARNING
-  → Agent calls search_industrial_documentation for seal replacement procedure
-  → Returns: fault classification + step-by-step repair procedure + citations
-```
-
-Model: Gemini 2.5 Flash (multimodal)
-
-**New tools added:**
-
-| Tool | Purpose |
-|------|---------|
-| `analyze_equipment_image` | General equipment image analysis — fault, nameplate, P&ID |
-| `analyze_gauge_reading` | Read gauge value from photo and check against spec |
 
 ---
 
 ### 3D — MCP Integration
 
-**Problem:** Custom integrations for every AI client are not scalable.
-The industry needs a standard protocol for AI-to-system connectivity.
-
-**Solution:** Full MCP (Model Context Protocol) implementation on both sides
-of the protocol — server and client.
-
-```
-MCP Server (this system) ←→ Any MCP-compatible AI client
-                              (Claude Desktop, Cursor, custom agents)
-
-LangGraph Agent → MCP Client Tool → MCP Server → Industrial Data
-```
-
 **As an MCP Server:**
-The Industrial AI Copilot exposes its capabilities as an MCP server.
-Any compliant AI client connects and accesses:
-- Live equipment telemetry
-- Equipment health overview
-- Spec checking
-- Knowledge base search
-- Unit conversion
+Any MCP-compatible AI client connects and accesses industrial telemetry,
+spec checking, knowledge base search, and unit conversion automatically.
 
-Connect from Claude Desktop by adding to `claude_desktop_config.json`:
+Connect from Claude Desktop (`claude_desktop_config.json`):
 ```json
 {
   "mcpServers": {
@@ -327,21 +228,55 @@ Connect from Claude Desktop by adding to `claude_desktop_config.json`:
 ```
 
 **As an MCP Client:**
-The LangGraph agent includes a `query_mcp_industrial_server` tool that
-demonstrates consuming an MCP server — connecting to the industrial data
-layer via the standardized protocol rather than direct function calls.
+The LangGraph agent consumes MCP servers via the `query_mcp_industrial_server` tool — connecting to external industrial data sources without custom integration code.
 
-**Why MCP matters:**
-Instead of building custom integrations for every AI tool,
-one MCP server makes your system accessible to the entire
-MCP-compatible ecosystem. This is the production integration
-pattern for enterprise AI in 2025.
+---
 
-**New tool added:**
+## Phase 4 — Multi-Agent Orchestration
 
-| Tool | Purpose |
-|------|---------|
-| `query_mcp_industrial_server` | Connect to industrial system via MCP protocol |
+**Problem:** Complex queries require simultaneous expertise across documentation, live data, calculations, and safety assessment. A single agent handles these sequentially, accumulating context until it hits token limits.
+
+**Solution:** A Supervisor Agent that analyses the query and delegates to specialist agents, each with isolated context and focused tools.
+
+```
+User Query
+     ↓
+Supervisor Agent — analyses query, selects specialists
+     ↓
+┌─────────────────────────────────────────────────┐
+│ Retrieval Agent  — documentation search         │
+│ Telemetry Agent  — live equipment monitoring    │
+│ Analysis Agent   — spec checks + calculations   │
+│ Safety Agent     — risk assessment + compliance │
+└─────────────────────────────────────────────────┘
+     ↓
+Report Agent — synthesises all findings
+     ↓
+Single, cited, actionable response
+```
+
+**Why multi-agent over single agent:**
+- **Isolated context windows** — no token overflow from accumulated tool results
+- **Specialist focus** — each agent optimised for one role with targeted tools
+- **Explicit reasoning chain** — every specialist's contribution is visible
+- **Scalable** — add new specialists without modifying existing agents
+
+**Example — full plant health report:**
+```
+Query: "Is it safe to continue operating the plant right now?"
+
+Supervisor selects: Telemetry + Analysis + Safety + Retrieval
+
+Telemetry Agent    → pulls readings from all 4 assets
+Analysis Agent     → runs spec checks on flagged parameters
+Safety Agent       → cross-references against ISO standards
+Retrieval Agent    → retrieves applicable safety procedures
+
+Report Agent       → synthesises: overall risk level, per-asset status,
+                     cited procedures, recommended actions
+
+Total latency: ~30s for full plant audit
+```
 
 ---
 
@@ -361,14 +296,25 @@ pattern for enterprise AI in 2025.
 
 ---
 
+## Specialist Agent Tools
+
+| Agent | Tools | Role |
+|-------|-------|------|
+| Retrieval Agent | `search_industrial_documentation` | Documentation search and citation |
+| Telemetry Agent | `get_equipment_telemetry`, `list_all_equipment` | Live equipment monitoring |
+| Analysis Agent | `spec_checker`, `engineering_calculator`, `unit_converter` | Engineering analysis |
+| Safety Agent | `spec_checker`, `search_industrial_documentation` | Risk assessment |
+| Report Agent | None — synthesises from other agents | Final response generation |
+
+---
+
 ## Observability
 
 Agent reasoning fully traced via LangSmith.
 
 ![LangSmith Trace](docs/langsmith_trace.jpg)
 
-Every tool call, latency, token usage, and reasoning step
-is observable and debuggable in production.
+Every tool call, latency, token usage, and reasoning step is observable and debuggable in production.
 
 ---
 
@@ -395,30 +341,25 @@ is observable and debuggable in production.
 ```
 industrial-ai-copilot/
 ├── src/
-│   ├── core/                       # RAG pipeline, retrieval, reranking, vector store
-│   │   └── ingestion_pipeline.py   # Live document ingestion
-│   ├── agents/                     # LangGraph agent — 9 tools
-│   ├── tools/                      # Tool abstractions
-│   │   ├── retrieval_tool.py       # RAG search
-│   │   ├── spec_checker_tool.py    # Specification comparison
-│   │   ├── unit_converter_tool.py  # Unit conversions
-│   │   ├── calculator_tool.py      # Engineering calculations
-│   │   ├── telemetry_tool.py       # Live equipment telemetry
-│   │   ├── vision_tool.py          # Gemini multimodal vision
-│   │   └── mcp_tool.py             # MCP client
-│   ├── api/                        # FastAPI routers
-│   │   ├── ingest_router.py        # Ingestion endpoints
-│   │   └── telemetry_api.py        # Telemetry simulation engine
-│   ├── mcp/                        # MCP server
-│   │   └── mcp_server.py           # Exposes industrial tools via MCP
-│   └── evaluation/                 # 30-case evaluation framework
-├── data/
-│   └── raw/                        # Source documents (gitignored)
+│   ├── core/                          # RAG pipeline, retrieval, reranking, vector store
+│   │   └── ingestion_pipeline.py      # Live document ingestion
+│   ├── agents/
+│   │   ├── maintenance_agent.py       # Single LangGraph agent — 9 tools
+│   │   ├── specialist_agents.py       # 4 specialist agents (Phase 4)
+│   │   └── multi_agent_system.py      # Supervisor orchestration (Phase 4)
+│   ├── tools/                         # 9 tool implementations
+│   ├── api/
+│   │   ├── ingest_router.py           # Ingestion endpoints
+│   │   └── telemetry_api.py           # Telemetry simulation engine
+│   ├── mcp/
+│   │   └── mcp_server.py              # MCP server exposing industrial tools
+│   └── evaluation/                    # 30-case evaluation framework
 ├── static/
-│   ├── index.html                  # RAG interface
-│   ├── agent.html                  # Agent interface with image upload
-│   └── ingest.html                 # Knowledge Base management UI
-├── main.py                         # FastAPI application
+│   ├── index.html                     # RAG interface
+│   ├── agent.html                     # Single agent interface
+│   ├── multiagent.html                # Multi-agent orchestration interface
+│   └── ingest.html                    # Knowledge Base management
+├── main.py                            # FastAPI application
 ├── Dockerfile
 └── requirements.txt
 ```
@@ -430,13 +371,15 @@ industrial-ai-copilot/
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/ui` | GET | RAG search interface |
-| `/agent-ui` | GET | Agent mode interface |
+| `/agent-ui` | GET | Single agent interface |
+| `/multiagent-ui` | GET | Multi-agent orchestration interface |
 | `/ingest-ui` | GET | Knowledge base management |
 | `/query` | POST | RAG query |
-| `/agent` | POST | Agentic reasoning (supports image upload) |
+| `/agent` | POST | Single agent reasoning |
+| `/multiagent` | POST | Multi-agent orchestration |
+| `/multiagent/agents` | GET | List available specialist agents |
 | `/ingest` | POST | Upload and index PDF |
 | `/ingest/status/{job_id}` | GET | Ingestion job status |
-| `/ingest/documents` | GET | List indexed documents |
 | `/telemetry` | GET | Plant-wide equipment health |
 | `/telemetry/{equipment_id}` | GET | Single asset telemetry |
 | `/health` | GET | System health check |
@@ -456,25 +399,16 @@ pip install -r requirements.txt
 
 Create `.env`:
 ```
-GROQ_API_KEY=your_key_here
-COHERE_API_KEY=your_key_here
-LANGCHAIN_API_KEY=your_key_here
-GEMINI_API_KEY=your_key_here
+GROQ_API_KEY=your_key
+COHERE_API_KEY=your_key
+LANGCHAIN_API_KEY=your_key
+GEMINI_API_KEY=your_key
 ```
 
-Run server:
 ```bash
-uvicorn main:app --reload
-```
-
-Run MCP server standalone:
-```bash
-python -m src.mcp.mcp_server
-```
-
-Run evaluation suite:
-```bash
-python -m src.evaluation.eval_runner
+uvicorn main:app --reload          # Full server
+python -m src.mcp.mcp_server       # MCP server standalone
+python -m src.evaluation.eval_runner  # Evaluation suite
 ```
 
 ---
@@ -482,12 +416,12 @@ python -m src.evaluation.eval_runner
 ## Roadmap
 
 - [x] Phase 1 — Hybrid RAG with reranking
-- [x] Phase 2 — LangGraph agent, 4 tools, 90% eval accuracy
+- [x] Phase 2 — LangGraph agent, 9 tools, 90% eval accuracy
 - [x] Phase 3A — Live document ingestion pipeline
 - [x] Phase 3B — Equipment telemetry with fault detection
 - [x] Phase 3C — Multimodal vision (gauges, nameplates, faults, P&ID)
 - [x] Phase 3D — MCP server + client integration
-- [ ] Phase 4 — Multi-agent orchestration
+- [x] Phase 4 — Multi-agent orchestration with supervisor delegation
 
 ---
 
@@ -495,6 +429,6 @@ python -m src.evaluation.eval_runner
 
 **Victor Isuo** — Applied LLM Engineer
 
-Building production-grade RAG and Agentic AI systems for industrial and enterprise applications.
+Building production-grade RAG and Agentic AI systems for industrial and enterprise uses.
 
-[GitHub](https://github.com/victor-isuo/industrial-ai-copilot) · [LinkedIn](https://linkedin.com/in/victor-isuo-a02b65171) · [Live Demo](https://victorisuo-industrial-ai-copilot.hf.space/agent-ui)
+[GitHub](https://github.com/victor-isuo/industrial-ai-copilot) · [LinkedIn](https://linkedin.com/in/victor-isuo-a02b65171) · [Live Demo](https://victorisuo-industrial-ai-copilot.hf.space/multiagent-ui)
