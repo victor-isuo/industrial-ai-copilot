@@ -156,10 +156,10 @@ class AgentResponse(BaseModel):
 async def root():
     return {
         "name":    "Industrial AI Copilot",
-        "version": "3.0.0",
+        "version": "4.0.0",
         "status":  "operational",
         "docs":    "/docs",
-        "phase":   "Phase 3 — Ingestion Pipeline + Telemetry + Multimodal"
+        "phase":   "Phase 4 — Multi-Agent orchestration"
     }
 
 
@@ -385,5 +385,5 @@ async def list_agents():
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.environ.get("PORT", 8000))
+    port = int(os.environ.get("PORT", 7860))
     uvicorn.run(app, host="0.0.0.0", port=port)
