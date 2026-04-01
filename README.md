@@ -447,6 +447,6 @@ python -m src.evaluation.eval_runner  # Evaluation suite
 
 **Victor Isuo** — Applied LLM Engineer
 
-Building production-grade RAG and Agentic AI systems for industrial and enterprise fault diagnosis.
+Building production-grade RAG and Agentic AI systems for industrial and enterprise use.
 
 [GitHub](https://github.com/victor-isuo/industrial-ai-copilot) · [LinkedIn](https://linkedin.com/in/victor-isuo-a02b65171) · [Live Demo](https://victorisuo-industrial-ai-copilot.hf.space/multiagent-ui)
