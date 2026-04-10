@@ -443,6 +443,29 @@ python -m src.evaluation.eval_runner  # Evaluation suite
 
 ---
 
+## Limitations & Next Steps
+
+The 90% evaluation accuracy reported 
+above was measured against a static 
+30-case test suite built before 
+optimization. In production, accuracy 
+needs continuous monitoring across 
+all three system layers — retrieval 
+quality, single-agent reasoning, and 
+multi-agent orchestration — not just 
+a one-time benchmark.
+
+This gap led directly to building a 
+dedicated LLM evaluation platform: 
+AgentEval. It evaluates RAG pipelines, 
+single-agent tool use, and multi-agent 
+coordination with automated scoring, 
+a live observability dashboard, and 
+CI/CD integration for regression 
+detection on every deployment.
+
+---
+
 ## Author
 
 **Victor Isuo** — Applied LLM Engineer
