@@ -1,4 +1,5 @@
 from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_core.tools import tool
@@ -18,6 +19,34 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+def extract_text(message) -> str:
+    """
+    Normalize a LangChain message's `.content` into a plain string.
+    Gemini (via langchain_google_genai) does not always return `.content`
+    as a string — it can return a list of content blocks instead, e.g.:
+        [{"type": "text", "text": "..."}]
+    Passing that list downstream (into a Pydantic str field, an API
+    response, or string concatenation) causes validation/type errors.
+    This helper makes `.content` access safe everywhere in the agent.
+    """
+    content = message.content
+
+    if isinstance(content, str):
+        return content
+
+    if isinstance(content, list):
+        text_parts = []
+        for block in content:
+            if isinstance(block, str):
+                text_parts.append(block)
+            elif isinstance(block, dict) and block.get("type") == "text":
+                text_parts.append(block.get("text", ""))
+        return "".join(text_parts)
+
+    logger.warning(f"Unexpected message content type: {type(content)}")
+    return str(content)
+
+
 # --- Agent State ---
 class AgentState(TypedDict):
     """
@@ -31,7 +60,6 @@ class AgentState(TypedDict):
 class MaintenanceAgent:
     """
     LangGraph-based maintenance agent.
-
     Why LangGraph over AgentExecutor:
     - Explicit state management
     - Controllable reasoning loops
@@ -40,9 +68,9 @@ class MaintenanceAgent:
     """
 
     def __init__(self, pipeline):
-        self.llm = ChatGroq(
-            model="meta-llama/llama-4-scout-17b-16e-instruct",
-            groq_api_key=os.getenv("GROQ_API_KEY"),
+        self.llm = ChatGoogleGenerativeAI(
+        model="gemini-3.1-flash-lite",
+        google_api_key=os.getenv("GEMINI_API_KEY"),
             temperature=0.1
         )
 
@@ -81,7 +109,6 @@ class MaintenanceAgent:
     def _build_graph(self):
         """
         Build the LangGraph agent graph.
-
         Graph structure:
         agent_node → tools_condition → tool_node → agent_node (loop)
                                      → END (when no tools needed)
@@ -92,7 +119,6 @@ class MaintenanceAgent:
             system_message = SystemMessage(content="""You are an expert industrial
 maintenance engineer AI assistant with access to a comprehensive knowledge base
 of industrial documentation and live equipment telemetry.
-
 TOOL USAGE RULES — FOLLOW STRICTLY:
 1. Call spec_checker ONLY when the user provides BOTH a measured value AND a spec/rated limit
 2. Call unit_converter ONLY when the user explicitly asks to convert a unit
@@ -102,7 +128,6 @@ TOOL USAGE RULES — FOLLOW STRICTLY:
 6. Call list_all_equipment when asked about overall plant status or available equipment
 7. Call analyze_equipment_image when an image is provided for general equipment analysis
 8. Call analyze_gauge_reading when an image of a gauge is provided
-
 GAUGE + EQUIPMENT WORKFLOW — FOLLOW THIS EXACT SEQUENCE:
 When a gauge image is provided AND any equipment ID is mentioned
 (pump-001, pump-002, motor-001, compressor-001):
@@ -119,7 +144,6 @@ When a gauge image is provided AND any equipment ID is mentioned
            - unit = unit from gauge reading
    NEVER ask the user for spec values if an equipment ID is provided
    NEVER stop after Step 1 — always complete all 6 steps
-
 EQUIPMENT PARAMETER REFERENCE:
 pump-001 (Gear Pump):
   - discharge_pressure: Normal 340-420 psi, Warning 450, Critical 500
@@ -128,7 +152,6 @@ pump-001 (Gear Pump):
   - temperature: Normal 40-75°C, Warning 85, Critical 95
   - vibration: Normal 0.5-2.3 mm/s, Warning 2.8, Critical 4.5
   - shaft_speed: Normal 1400-1550 RPM
-
 pump-002 (Centrifugal Pump):
   - discharge_pressure: Normal 80-120 psi, Warning 135, Critical 150
   - suction_pressure: Normal 5-20 psi, Warning 3, Critical 1
@@ -136,7 +159,6 @@ pump-002 (Centrifugal Pump):
   - temperature: Normal 35-65°C, Warning 75, Critical 90
   - vibration: Normal 0.3-2.0 mm/s, Warning 2.5, Critical 4.0
   - shaft_speed: Normal 2800-3000 RPM
-
 motor-001 (Electric Motor):
   - winding_temperature: Normal 40-80°C, Warning 90, Critical 105
   - bearing_temperature: Normal 35-70°C, Warning 80, Critical 95
@@ -144,7 +166,6 @@ motor-001 (Electric Motor):
   - vibration: Normal 0.2-1.8 mm/s, Warning 2.3, Critical 3.5
   - shaft_speed: Normal 1450-1500 RPM
   - insulation_resistance: Normal 100-999 MΩ, Warning 50, Critical 10
-
 compressor-001 (Reciprocating Compressor):
   - discharge_pressure: Normal 100-145 psi, Warning 150, Critical 165
   - suction_pressure: Normal 12-18 psi, Warning 10, Critical 8
@@ -152,14 +173,12 @@ compressor-001 (Reciprocating Compressor):
   - oil_pressure: Normal 25-45 psi, Warning 20, Critical 15
   - vibration: Normal 1.0-3.5 mm/s, Warning 4.5, Critical 7.0
   - rpm: Normal 900-1050 RPM
-
 DIAGNOSIS WORKFLOW:
 For equipment diagnosis — always follow this sequence:
    STEP 1: Call get_equipment_telemetry to get live readings
    STEP 2: Call spec_checker on any parameter outside normal range
    STEP 3: Call search_industrial_documentation for maintenance procedure
    STEP 4: Return diagnosis + procedure + citations
-
 RESPONSE RULES:
 - Always cite sources when using search_industrial_documentation
 - Include document name AND page number in every citation
@@ -215,7 +234,7 @@ RESPONSE RULES:
 
             # Extract final answer
             final_message = result["messages"][-1]
-            answer = final_message.content
+            answer = extract_text(final_message)
 
             # Update conversation history
             self.conversation_history = list(result["messages"])
