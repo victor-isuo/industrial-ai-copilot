@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.documents import Document
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
@@ -56,12 +57,12 @@ class RAGPipeline:
     def __init__(self, retriever, reranker):
         self.retriever = retriever
         self.reranker = reranker
-        self.llm = ChatGroq(
-            model="meta-llama/llama-4-scout-17b-16e-instruct",
-            groq_api_key=os.getenv("GROQ_API_KEY"),
+        self.llm = ChatGoogleGenerativeAI(
+        model="gemini-3.1-flash-lite",
+            google_api_key=os.getenv("GEMINI_API_KEY"),
             temperature=0.1  # Low temperature for factual accuracy
         )
-        logger.info("RAG Pipeline initialized with Groq Llama 4")
+        logger.info("RAG Pipeline initialized with Gemini 3.1 Flash Lite")
 
     def _format_context(self, documents: list[Document]) -> str:
         """Format retrieved documents into context string."""
@@ -75,6 +76,38 @@ class RAGPipeline:
                 f"{doc.page_content}"
             )
         return "\n\n---\n\n".join(context_parts)
+
+    def _extract_text(self, response) -> str:
+        """
+        Normalize LLM response content into a plain string.
+
+        Gemini (via langchain_google_genai) does not always return
+        `response.content` as a string. Depending on the model and
+        whether it includes grounding metadata or multi-part output,
+        `.content` can instead be a list of content blocks, e.g.:
+            [{"type": "text", "text": "..."}]
+
+        Feeding a list straight into a Pydantic `str` field raises a
+        validation error, which is what caused the 500 in production.
+        This method handles both shapes safely.
+        """
+        content = response.content
+
+        if isinstance(content, str):
+            return content
+
+        if isinstance(content, list):
+            text_parts = []
+            for block in content:
+                if isinstance(block, str):
+                    text_parts.append(block)
+                elif isinstance(block, dict) and block.get("type") == "text":
+                    text_parts.append(block.get("text", ""))
+            return "".join(text_parts)
+
+        # Fallback for any unexpected shape — never let this crash the pipeline
+        logger.warning(f"Unexpected LLM response content type: {type(content)}")
+        return str(content)
 
     def _assess_confidence(self, documents: list[Document]) -> str:
         """Assess confidence based on reranker relevance scores."""
@@ -108,7 +141,7 @@ class RAGPipeline:
         # Step 4: Generate answer
         prompt = RAG_PROMPT.format(context=context, question=question)
         response = self.llm.invoke(prompt)
-        answer = response.content
+        answer = self._extract_text(response)
 
         # Step 5: Extract sources
         sources = list(set([
