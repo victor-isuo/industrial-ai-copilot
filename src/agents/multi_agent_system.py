@@ -34,6 +34,7 @@ from dataclasses import dataclass, field
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 from src.agents.specialist_agents import (
     create_retrieval_agent,
@@ -41,6 +42,7 @@ from src.agents.specialist_agents import (
     create_analysis_agent,
     create_safety_agent,
     run_specialist,
+    extract_text,
 )
 
 logger = logging.getLogger(__name__)
@@ -85,9 +87,9 @@ class SupervisorAgent:
 
     def __init__(self, pipeline):
         self.pipeline = pipeline
-        self.llm = ChatGroq(
-            model="meta-llama/llama-4-scout-17b-16e-instruct",
-            groq_api_key=os.getenv("GROQ_API_KEY"),
+        self.llm = ChatGoogleGenerativeAI(
+        model="gemini-3.1-flash-lite",
+        google_api_key=os.getenv("GEMINI_API_KEY"),
             temperature=0.1,
         )
 
@@ -130,7 +132,7 @@ Return ONLY the comma-separated agent names. Nothing else."""
             HumanMessage(content=f"Query: {query}")
         ])
 
-        raw = response.content.strip()
+        raw = extract_text(response).strip()
         agents = [a.strip() for a in raw.split(",")]
         valid = ["Retrieval Agent", "Telemetry Agent", "Analysis Agent", "Safety Agent"]
         selected = [a for a in agents if a in valid]
@@ -178,7 +180,7 @@ RULES:
             ))
         ])
 
-        return response.content
+        return extract_text(response)
 
     def run(self, query: str) -> MultiAgentResponse:
         """
@@ -260,4 +262,5 @@ def initialize_multi_agent_system(pipeline):
     _multi_agent_system = SupervisorAgent(pipeline)
     logger.info("Multi-agent system initialized.")
     return _multi_agent_system
+
 
