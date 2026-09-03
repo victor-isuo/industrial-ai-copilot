@@ -1,4 +1,5 @@
 from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_core.tools import tool
@@ -16,6 +17,35 @@ os.environ["LANGCHAIN_PROJECT"] = "industrial-ai-copilot"
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+def extract_text(message) -> str:
+    """
+    Normalize a LangChain message's `.content` into a plain string.
+
+    Gemini (via langchain_google_genai) does not always return `.content`
+    as a string — it can return a list of content blocks instead, e.g.:
+        [{"type": "text", "text": "..."}]
+    Passing that list downstream (into a Pydantic str field, an API
+    response, or string concatenation) causes validation/type errors.
+    This helper makes `.content` access safe everywhere in the agent.
+    """
+    content = message.content
+
+    if isinstance(content, str):
+        return content
+
+    if isinstance(content, list):
+        text_parts = []
+        for block in content:
+            if isinstance(block, str):
+                text_parts.append(block)
+            elif isinstance(block, dict) and block.get("type") == "text":
+                text_parts.append(block.get("text", ""))
+        return "".join(text_parts)
+
+    logger.warning(f"Unexpected message content type: {type(content)}")
+    return str(content)
 
 
 # --- Agent State ---
@@ -40,9 +70,9 @@ class MaintenanceAgent:
     """
 
     def __init__(self, pipeline):
-        self.llm = ChatGroq(
-            model="meta-llama/llama-4-scout-17b-16e-instruct",
-            groq_api_key=os.getenv("GROQ_API_KEY"),
+        self.llm = ChatGoogleGenerativeAI(
+        model="gemini-3.1-flash-lite",
+        google_api_key=os.getenv("GEMINI_API_KEY"),
             temperature=0.1
         )
 
@@ -215,7 +245,7 @@ RESPONSE RULES:
 
             # Extract final answer
             final_message = result["messages"][-1]
-            answer = final_message.content
+            answer = extract_text(final_message)
 
             # Update conversation history
             self.conversation_history = list(result["messages"])

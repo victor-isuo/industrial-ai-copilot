@@ -23,10 +23,38 @@ import operator
 
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode, tools_condition
 
 logger = logging.getLogger(__name__)
+
+
+def extract_text(message) -> str:
+    """
+    Normalize a LangChain message's `.content` into a plain string.
+
+    Gemini (via langchain_google_genai) can return `.content` as a list
+    of content blocks instead of a plain string, e.g.:
+        [{"type": "text", "text": "..."}]
+    This helper handles both shapes so callers never crash on the list case.
+    """
+    content = message.content
+
+    if isinstance(content, str):
+        return content
+
+    if isinstance(content, list):
+        text_parts = []
+        for block in content:
+            if isinstance(block, str):
+                text_parts.append(block)
+            elif isinstance(block, dict) and block.get("type") == "text":
+                text_parts.append(block.get("text", ""))
+        return "".join(text_parts)
+
+    logger.warning(f"Unexpected message content type: {type(content)}")
+    return str(content)
 
 
 # ── Shared State ──────────────────────────────────────────────────────────────
@@ -38,9 +66,9 @@ class AgentState(TypedDict):
 # ── LLM Factory ───────────────────────────────────────────────────────────────
 
 def _get_llm():
-    return ChatGroq(
-        model="meta-llama/llama-4-scout-17b-16e-instruct",
-        groq_api_key=os.getenv("GROQ_API_KEY"),
+    return ChatGoogleGenerativeAI(
+        model="gemini-3.1-flash-lite",
+        google_api_key=os.getenv("GEMINI_API_KEY"),
         temperature=0.1,
     )
 
@@ -208,8 +236,7 @@ def run_specialist(agent, query: str) -> str:
             "messages": [HumanMessage(content=query)]
         })
         final_msg = result["messages"][-1]
-        return final_msg.content if hasattr(final_msg, "content") else str(final_msg)
+        return extract_text(final_msg) if hasattr(final_msg, "content") else str(final_msg)
     except Exception as e:
         logger.error(f"Specialist agent failed: {e}")
         return f"Agent encountered an error: {str(e)}"
-
