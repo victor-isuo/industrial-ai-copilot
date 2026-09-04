@@ -28,9 +28,8 @@ pipeline     = None
 agent        = None
 vector_store = None  # Kept globally so ingest router can update it live
 
-
 async def initialize_pipeline():
-    global pipeline, agent, vector_store
+    global pipeline, agent, vector_store, is_ready
 
     try:
         logger.info("Initializing pipeline in background...")
@@ -42,11 +41,6 @@ async def initialize_pipeline():
         docs   = load_documents()
         chunks = chunk_documents(docs)
 
-        if not chunks:
-            logger.error("No documents found. Check PDF files are present.")
-            return
-
-        logger.info("Building vector store from documents...")
         vector_store = load_vector_store()
 
         # Inject vector store into ingest router so uploads update the live index
@@ -55,7 +49,15 @@ async def initialize_pipeline():
         retriever = create_hybrid_retriever(vector_store, chunks)
         reranker  = CohereReranker(top_n=5)
         pipeline  = RAGPipeline(retriever=retriever, reranker=reranker)
+
+        is_ready = True
         logger.info("Pipeline ready. System operational.")
+
+    except Exception as e:
+        logger.error(f"Pipeline initialization failed: {e}")
+        # is_ready stays False — ALB will keep failing health checks
+        # and ECS will eventually cycle the task, which is correct behavior
+
 
         # Initialize single agent
         agent = MaintenanceAgent(pipeline=pipeline)
@@ -168,9 +170,17 @@ async def root():
         "phase":   "Phase 4 — Multi-Agent orchestration"
     }
 
+# Global readiness flag
+is_ready = False
 
 @app.get("/health")
 async def health():
+    """
+    Liveness + readiness check for ALB.
+    Returns 503 until initialization is fully complete.
+    """
+    if not is_ready:
+        raise HTTPException(status_code=503, detail="Service initializing")
     return {
         "status":          "healthy",
         "pipeline_loaded": pipeline is not None,
