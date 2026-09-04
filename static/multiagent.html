@@ -1,791 +1,829 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Industrial AI Copilot — Multi-Agent Orchestration</title>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&family=Bebas+Neue&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg:       #04060d;
-            --panel:    #070b12;
-            --card:     #0a0f1a;
-            --border:   #101e30;
-            --border2:  #1a2e48;
-            --orange:   #f07020;
-            --cyan:     #00c8f0;
-            --green:    #00e676;
-            --yellow:   #ffd740;
-            --red:      #ff5555;
-            --purple:   #b06aff;
-            --text:     #ddeaf8;
-            --mid:      #6a90b0;
-            --dim:      #1e3450;
-            --mono:     'JetBrains Mono', monospace;
-            --display:  'Bebas Neue', sans-serif;
-            --ui:       'Rajdhani', sans-serif;
-        }
-
-        * { margin:0; padding:0; box-sizing:border-box; }
-
-        body {
-            background: var(--bg);
-            color: var(--text);
-            font-family: var(--ui);
-            min-height: 100vh;
-            overflow-x: hidden;
-            position: relative;
-        }
-
-        /* Deep space background */
-        body::before {
-            content: '';
-            position: fixed; inset: 0;
-            background:
-                radial-gradient(ellipse 80% 50% at 20% 20%, rgba(0,200,240,0.04) 0%, transparent 60%),
-                radial-gradient(ellipse 60% 40% at 80% 80%, rgba(176,106,255,0.04) 0%, transparent 60%),
-                radial-gradient(ellipse 40% 30% at 50% 50%, rgba(0,230,118,0.02) 0%, transparent 60%),
-                linear-gradient(rgba(0,200,240,0.025) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0,200,240,0.025) 1px, transparent 1px);
-            background-size: 100% 100%, 100% 100%, 100% 100%, 36px 36px, 36px 36px;
-            pointer-events: none; z-index: 0;
-        }
-
-        /* Moving scan line */
-        body::after {
-            content: '';
-            position: fixed; left:0; right:0;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, rgba(0,200,240,0.15), transparent);
-            animation: scanMove 6s linear infinite;
-            pointer-events: none; z-index: 1;
-            top: 0;
-        }
-
-        @keyframes scanMove { 0%{top:-2px;} 100%{top:100vh;} }
-        @keyframes blink    { 0%,100%{opacity:1;} 50%{opacity:0.15;} }
-        @keyframes spin     { to{transform:rotate(360deg);} }
-        @keyframes pulse    { 0%,100%{transform:scale(1); opacity:1;} 50%{transform:scale(1.15); opacity:0.7;} }
-        @keyframes slideUp  { from{opacity:0;transform:translateY(14px);} to{opacity:1;transform:translateY(0);} }
-        @keyframes flow     { 0%{background-position:200% 0;} 100%{background-position:-200% 0;} }
-        @keyframes agentIn  { from{opacity:0;transform:translateX(-8px);} to{opacity:1;transform:translateX(0);} }
-
-        /* Hazard stripe */
-        .stripe {
-            height: 4px;
-            background: repeating-linear-gradient(
-                90deg, var(--orange) 0px, var(--orange) 18px,
-                transparent 18px, transparent 28px
-            );
-            position: relative; z-index: 10;
-        }
-
-        /* === LAYOUT === */
-        .layout {
-            display: grid;
-            grid-template-columns: 252px 1fr;
-            min-height: calc(100vh - 4px);
-            position: relative; z-index: 2;
-        }
-
-        /* === SIDEBAR === */
-        .sidebar {
-            background: var(--panel);
-            border-right: 1px solid var(--border2);
-            display: flex;
-            flex-direction: column;
-            position: sticky; top: 0;
-            height: 100vh;
-            overflow-y: auto; overflow-x: hidden;
-        }
-
-        /* Logo block */
-        .sb-logo {
-            padding: 22px 18px 18px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .sb-tag {
-            font-family: var(--mono);
-            font-size: 8px;
-            color: var(--orange);
-            letter-spacing: 3px;
-            margin-bottom: 6px;
-        }
-
-        .sb-title {
-            font-family: var(--display);
-            font-size: 24px;
-            letter-spacing: 2px;
-            color: var(--text);
-            line-height: 1;
-        }
-
-        .sb-title span { color: var(--orange); }
-
-        .sb-sub {
-            font-family: var(--mono);
-            font-size: 8px;
-            color: var(--dim);
-            letter-spacing: 1px;
-            margin-top: 5px;
-        }
-
-        /* Section label */
-        .sb-section-label {
-            font-family: var(--mono);
-            font-size: 8px;
-            color: var(--dim);
-            letter-spacing: 2px;
-            padding: 14px 18px 8px;
-        }
-
-        /* Nav */
-        .nav-block { border-bottom: 1px solid var(--border); padding-bottom: 10px; }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 18px;
-            text-decoration: none;
-            transition: all 0.2s;
-            border-left: 2px solid transparent;
-        }
-
-        .nav-item:hover { background: rgba(255,255,255,0.03); }
-
-        .nav-item.active {
-            background: rgba(240,112,32,0.08);
-            border-left-color: var(--orange);
-        }
-
-        .nav-icon { font-size: 12px; width: 14px; text-align: center; color: var(--dim); }
-        .nav-item.active .nav-icon { color: var(--orange); }
-
-        .nav-text {
-            font-family: var(--mono);
-            font-size: 10px;
-            color: var(--mid);
-            letter-spacing: 0.5px;
-        }
-
-        .nav-item.active .nav-text { color: var(--orange); }
-        .nav-item:hover .nav-text  { color: var(--text); }
-
-        /* Agent roster */
-        .roster-block {
-            padding: 0 0 10px;
-            flex: 1;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .agent-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 9px 18px;
-            transition: all 0.35s;
-            border-left: 2px solid transparent;
-            position: relative;
-        }
-
-        .agent-item.active {
-            background: rgba(255,255,255,0.03);
-            border-left-color: var(--a-color, var(--cyan));
-        }
-
-        .agent-item.done {
-            border-left-color: var(--green);
-            background: rgba(0,230,118,0.04);
-        }
-
-        .a-dot {
-            width: 7px; height: 7px;
-            border-radius: 50%;
-            background: var(--dim);
-            flex-shrink: 0;
-            transition: all 0.3s;
-        }
-
-        .agent-item.active .a-dot {
-            background: var(--a-color, var(--cyan));
-            box-shadow: 0 0 8px var(--a-color, var(--cyan));
-            animation: pulse 0.8s ease infinite;
-        }
-
-        .agent-item.done .a-dot {
-            background: var(--green);
-            box-shadow: 0 0 6px var(--green);
-            animation: none;
-        }
-
-        .a-info { flex: 1; min-width: 0; }
-
-        .a-name {
-            font-family: var(--mono);
-            font-size: 10px;
-            color: var(--mid);
-            letter-spacing: 0.5px;
-            transition: color 0.3s;
-        }
-
-        .agent-item.active .a-name { color: var(--a-color, var(--cyan)); }
-        .agent-item.done .a-name   { color: var(--green); }
-
-        .a-role {
-            font-family: var(--mono);
-            font-size: 8px;
-            color: var(--dim);
-            margin-top: 2px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .a-state {
-            font-family: var(--mono);
-            font-size: 8px;
-            color: var(--dim);
-            letter-spacing: 1px;
-            flex-shrink: 0;
-            transition: color 0.3s;
-        }
-
-        .agent-item.active .a-state { color: var(--a-color, var(--cyan)); }
-        .agent-item.done .a-state   { color: var(--green); }
-
-        /* Session stats */
-        .stats-block { padding: 14px 18px; }
-
-        .stat-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 7px;
-        }
-
-        .stat-label { font-family: var(--mono); font-size: 8px; color: var(--dim); }
-        .stat-val   { font-family: var(--mono); font-size: 10px; color: var(--cyan); }
-
-        /* === MAIN === */
-        .main { display: flex; flex-direction: column; overflow: hidden; }
-
-        /* Top bar */
-        .top-bar {
-            padding: 14px 26px;
-            background: var(--panel);
-            border-bottom: 1px solid var(--border2);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: relative; z-index: 5;
-        }
-
-        .tb-left { display: flex; align-items: center; gap: 16px; }
-
-        .tb-title {
-            font-family: var(--display);
-            font-size: 20px;
-            letter-spacing: 3px;
-            color: var(--text);
-        }
-
-        .tb-divider { width: 1px; height: 18px; background: var(--border2); }
-
-        .tb-sub {
-            font-family: var(--mono);
-            font-size: 9px;
-            color: var(--mid);
-            letter-spacing: 1px;
-        }
-
-        .live-badge {
-            display: flex; align-items: center; gap: 6px;
-            font-family: var(--mono); font-size: 9px;
-            color: var(--green); letter-spacing: 1px;
-        }
-
-        .live-dot {
-            width: 6px; height: 6px; border-radius: 50%;
-            background: var(--green); box-shadow: 0 0 8px var(--green);
-            animation: blink 1.5s infinite;
-        }
-
-        /* Metrics strip */
-        .metrics-strip {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 1px;
-            background: var(--border);
-            border-bottom: 1px solid var(--border2);
-        }
-
-        .metric-cell {
-            background: var(--card);
-            padding: 12px 18px;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.4s;
-        }
-
-        .metric-cell::after {
-            content: '';
-            position: absolute;
-            bottom: 0; left: 0; right: 0; height: 2px;
-            background: var(--cyan);
-            transform: scaleX(0); transform-origin: left;
-            transition: transform 0.6s ease;
-        }
-
-        .metric-cell.lit::after { transform: scaleX(1); }
-
-        .m-label { font-family: var(--mono); font-size: 8px; color: var(--dim); letter-spacing: 1px; margin-bottom: 5px; }
-        .m-value { font-family: var(--display); font-size: clamp(18px,2.5vw,26px); letter-spacing: 2px; color: var(--text); line-height:1; }
-        .m-unit  { font-family: var(--mono); font-size: 8px; color: var(--mid); margin-top: 3px; }
-
-        /* Content */
-        .content {
-            padding: 20px 26px;
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-            overflow-y: auto;
-            flex: 1;
-        }
-
-        /* Query panel */
-        .query-panel {
-            background: var(--card);
-            border: 1px solid var(--border2);
-            position: relative; overflow: hidden;
-        }
-
-        .query-panel::before {
-            content: '';
-            position: absolute; top:0; left:0; right:0; height:2px;
-            background: linear-gradient(90deg, var(--orange), var(--cyan), var(--purple), var(--orange));
-            background-size: 300% 100%;
-            animation: flow 4s linear infinite;
-        }
-
-        .qp-head {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 12px 18px 0;
-        }
-
-        .qp-label { font-family: var(--mono); font-size: 9px; color: var(--orange); letter-spacing: 2px; }
-        .qp-hint  { font-family: var(--mono); font-size: 8px; color: var(--dim); }
-
-        .qp-body {
-            padding: 10px 18px;
-            display: flex; gap: 10px; align-items: flex-end;
-        }
-
-        textarea {
-            flex: 1;
-            background: rgba(0,0,0,0.5);
-            border: 1px solid var(--border2);
-            color: var(--text);
-            font-family: var(--ui);
-            font-size: 15px; font-weight: 500;
-            padding: 12px 14px;
-            resize: none; height: 86px;
-            outline: none;
-            transition: border-color 0.2s;
-            line-height: 1.5;
-        }
-
-        textarea:focus { border-color: rgba(176,106,255,0.5); }
-        textarea::placeholder { color: var(--dim); font-weight: 400; }
-
-        .run-btn {
-            background: linear-gradient(135deg, var(--purple), #8040cc);
-            color: #fff;
-            border: none;
-            padding: 0 24px; height: 86px;
-            font-family: var(--display);
-            font-size: 15px; letter-spacing: 3px;
-            cursor: pointer; transition: all 0.2s;
-            min-width: 120px;
-            position: relative; overflow: hidden;
-        }
-
-        .run-btn::before {
-            content: '';
-            position: absolute; inset: 0;
-            background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent);
-            opacity: 0; transition: opacity 0.2s;
-        }
-
-        .run-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(176,106,255,0.5); }
-        .run-btn:hover::before { opacity: 1; }
-        .run-btn:disabled { background: var(--dim); cursor: not-allowed; transform: none; box-shadow: none; color: #000; }
-
-        .qp-examples {
-            padding: 0 18px 12px;
-            display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
-        }
-
-        .ex-label { font-family: var(--mono); font-size: 8px; color: var(--dim); letter-spacing: 1px; margin-right: 4px; }
-
-        .ex-btn {
-            font-family: var(--mono); font-size: 9px;
-            padding: 3px 9px;
-            background: transparent;
-            border: 1px solid var(--border2);
-            color: var(--mid); cursor: pointer; transition: all 0.2s;
-        }
-
-        .ex-btn:hover { border-color: var(--purple); color: var(--purple); background: rgba(176,106,255,0.06); }
-
-        /* Progress */
-        .prog-panel {
-            display: none;
-            background: var(--card); border: 1px solid var(--border2); overflow: hidden;
-        }
-
-        .prog-panel.visible { display: block; }
-
-        .prog-head {
-            display: flex; align-items: center; gap: 10px;
-            padding: 11px 18px; border-bottom: 1px solid var(--border);
-            background: rgba(176,106,255,0.05);
-        }
-
-        .prog-spinner {
-            width: 13px; height: 13px;
-            border: 2px solid var(--border2);
-            border-top-color: var(--purple);
-            border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0;
-        }
-
-        .prog-title { font-family: var(--mono); font-size: 9px; color: var(--purple); letter-spacing: 2px; flex:1; }
-        .prog-timer { font-family: var(--mono); font-size: 9px; color: var(--mid); }
-
-        .prog-steps { padding: 12px 18px; display: flex; flex-direction: column; gap: 9px; }
-
-        .ps {
-            display: flex; align-items: center; gap: 10px;
-            opacity: 0.2; transition: opacity 0.4s;
-        }
-
-        .ps.active { opacity: 1; }
-        .ps.done   { opacity: 0.55; }
-
-        .ps-bar {
-            width: 2px; height: 16px; background: var(--border2); flex-shrink: 0; transition: background 0.3s;
-        }
-
-        .ps.active .ps-bar { background: var(--purple); box-shadow: 0 0 6px var(--purple); }
-        .ps.done   .ps-bar { background: var(--green); }
-
-        .ps-text { font-family: var(--mono); font-size: 9px; color: var(--dim); flex:1; }
-        .ps.active .ps-text { color: var(--text); }
-        .ps.done   .ps-text { color: var(--green); }
-
-        .ps-check { font-size: 9px; color: var(--green); display:none; }
-        .ps.done .ps-check { display:block; }
-
-        /* Error */
-        .err-panel {
-            display: none; padding: 13px 18px;
-            background: rgba(255,85,85,0.07);
-            border: 1px solid rgba(255,85,85,0.3);
-            font-family: var(--mono); font-size: 11px; color: var(--red);
-        }
-
-        .err-panel.visible { display: block; }
-
-        /* Findings */
-        .findings { display: none; }
-        .findings.visible { display: block; }
-
-        .findings-label {
-            font-family: var(--mono); font-size: 8px; color: var(--dim);
-            letter-spacing: 2px; margin-bottom: 10px;
-        }
-
-        .findings-grid {
-            display: grid; grid-template-columns: repeat(2,1fr); gap: 10px;
-        }
-
-        .f-card {
-            background: var(--card); border: 1px solid var(--border2);
-            overflow: hidden; animation: slideUp 0.4s ease both;
-        }
-
-        .f-card:nth-child(2) { animation-delay: 0.08s; }
-        .f-card:nth-child(3) { animation-delay: 0.16s; }
-        .f-card:nth-child(4) { animation-delay: 0.24s; }
-
-        .f-head {
-            display: flex; align-items: center; gap: 8px;
-            padding: 8px 12px; border-bottom: 1px solid var(--border);
-        }
-
-        .f-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink:0; }
-
-        .f-name { font-family: var(--mono); font-size: 9px; letter-spacing: 1px; flex:1; }
-        .f-lat  { font-family: var(--mono); font-size: 8px; color: var(--dim); }
-
-        .f-body { padding: 10px 12px; max-height: 130px; overflow-y: auto; }
-        .f-body::-webkit-scrollbar { width: 2px; }
-        .f-body::-webkit-scrollbar-thumb { background: var(--border2); }
-
-        .f-text { font-family: var(--mono); font-size: 9px; color: var(--mid); line-height: 1.7; white-space: pre-wrap; }
-
-        /* Final */
-        .final {
-            display: none; background: var(--card); border: 1px solid var(--border2);
-            overflow: hidden; animation: slideUp 0.5s ease both;
-        }
-
-        .final.visible { display: block; }
-
-        .final-head {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 13px 18px; border-bottom: 1px solid var(--border);
-            background: rgba(0,230,118,0.04);
-        }
-
-        .final-label { font-family: var(--mono); font-size: 9px; color: var(--green); letter-spacing: 2px; }
-
-        .final-chips { display: flex; gap: 18px; }
-
-        .chip { display: flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 9px; }
-        .chip-l { color: var(--dim); }
-        .chip-v { color: var(--cyan); }
-
-        .final-body { padding: 22px 18px; }
-
-        .final-text {
-            font-family: var(--ui); font-size: 15px; font-weight: 400;
-            line-height: 1.85; color: var(--text); white-space: pre-wrap;
-        }
-
-        .final-footer {
-            padding: 11px 18px; border-top: 1px solid var(--border);
-            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-        }
-
-        .footer-label { font-family: var(--mono); font-size: 8px; color: var(--dim); letter-spacing: 2px; }
-
-        .a-badge {
-            font-family: var(--mono); font-size: 8px;
-            padding: 2px 8px; border: 1px solid; letter-spacing: 1px;
-        }
-
-        /* Mobile */
-        @media (max-width: 768px) {
-            .layout { grid-template-columns: 1fr; }
-            .sidebar { display: none; }
-            .findings-grid { grid-template-columns: 1fr; }
-            .metrics-strip { grid-template-columns: repeat(2,1fr); }
-            .tb-sub { display: none; }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Industrial AI Copilot — Multi-Agent Orchestration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+
+:root{
+  --bg:        #0c0d0f;
+  --panel:     #131519;
+  --panel-2:   #1a1d22;
+  --line:      #262a31;
+  --line-lit:  #3a3f48;
+  --steel:     #6b7280;
+  --steel-dim: #4a4f58;
+  --text:      #e8e9eb;
+  --text-dim:  #9a9fa8;
+
+  --amber:     #f2b230;
+  --amber-dim: #7a5c1c;
+  --teal:      #2dd4a8;
+  --teal-dim:  #1a5c48;
+  --blue:      #4f9ef2;
+  --blue-dim:  #274d78;
+  --violet:    #a684f2;
+  --violet-dim:#4a3878;
+  --red:       #e8483c;
+  --red-dim:   #7a241d;
+
+  --ui: 'Inter', -apple-system, sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+
+  --radius: 3px;
+}
+
+*{ margin:0; padding:0; box-sizing:border-box; }
+
+body{
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--ui);
+  min-height: 100vh;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* subtle panel texture — not a scanline gimmick, just faint machined grain */
+body{
+  background-image:
+    radial-gradient(circle at 15% 0%, rgba(242,178,48,0.035), transparent 45%),
+    radial-gradient(circle at 100% 100%, rgba(79,158,242,0.03), transparent 50%);
+  background-attachment: fixed;
+}
+
+@keyframes spin { to{ transform:rotate(360deg); } }
+@keyframes pulseDot { 0%,100%{ opacity:1; } 50%{ opacity:0.35; } }
+@keyframes riseIn { from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:translateY(0); } }
+@keyframes sweepIn { from{ width:0; } }
+@keyframes flashBorder { 0%{ box-shadow:0 0 0 0 rgba(242,178,48,0.5); } 100%{ box-shadow:0 0 0 6px rgba(242,178,48,0); } }
+
+/* ============ SHELL ============ */
+.shell{
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  min-height: 100vh;
+}
+
+/* ============ RAIL (left) ============ */
+.rail{
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.rail-head{
+  padding: 20px 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.rail-eyebrow{
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--amber);
+  margin-bottom: 8px;
+}
+
+.rail-title{
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  color: var(--text);
+}
+
+.rail-title em{ color: var(--amber); font-style:normal; }
+
+.rail-sub{
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--text-dim);
+  margin-top: 6px;
+}
+
+/* Interfaces nav — plain list, function over ornament */
+.rail-section{
+  padding: 14px 18px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--steel);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rail-nav{ border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+
+.rail-link{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 18px;
+  text-decoration: none;
+  color: var(--text-dim);
+  font-size: 13.5px;
+  font-weight: 500;
+  border-left: 2px solid transparent;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.rail-link:hover{ background: rgba(255,255,255,0.025); color: var(--text); }
+
+.rail-link.current{
+  color: var(--amber);
+  border-left-color: var(--amber);
+  background: rgba(242,178,48,0.06);
+}
+
+.rail-link .glyph{
+  width: 16px; text-align: center; font-size: 13px; color: inherit; opacity: 0.85;
+}
+
+/* Agent roster — real pipeline states, not game HUD dots */
+.roster{ flex: 1; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+
+.agent-row{
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 18px;
+  border-left: 2px solid transparent;
+  transition: background 0.3s, border-color 0.3s;
+  position: relative;
+}
+
+.agent-row.active{
+  background: rgba(255,255,255,0.04);
+  border-left-color: var(--a-color, var(--blue));
+}
+
+.agent-row.done{
+  border-left-color: var(--teal);
+  background: rgba(45,212,168,0.05);
+}
+
+.agent-led{
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--steel-dim);
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+
+.agent-row.active .agent-led{
+  background: var(--a-color, var(--blue));
+  box-shadow: 0 0 8px var(--a-color, var(--blue));
+  animation: pulseDot 1s ease infinite;
+}
+
+.agent-row.done .agent-led{ background: var(--teal); animation:none; box-shadow:none; }
+
+.agent-meta{ flex: 1; min-width: 0; }
+
+.agent-name{
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+  transition: color 0.3s;
+}
+
+.agent-row.active .agent-name{ color: var(--a-color, var(--blue)); }
+.agent-row.done .agent-name{ color: var(--teal); }
+
+.agent-role{
+  font-size: 11px;
+  color: var(--steel);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.agent-state{
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--steel-dim);
+  flex-shrink: 0;
+  letter-spacing: 0.03em;
+}
+
+.agent-row.active .agent-state{ color: var(--a-color, var(--blue)); }
+.agent-row.done .agent-state{ color: var(--teal); }
+
+/* Session panel */
+.session{ padding: 16px 18px; }
+
+.session-row{
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 5px 0;
+  font-size: 12.5px;
+}
+.session-row .k{ color: var(--steel); }
+.session-row .v{ font-family: var(--mono); color: var(--blue); font-weight: 500; }
+
+/* ============ MAIN ============ */
+.main{ display: flex; flex-direction: column; min-width: 0; }
+
+.topbar{
+  padding: 16px 28px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.topbar-title{
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.topbar-sub{
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.live-pill{
+  display: flex; align-items: center; gap: 7px;
+  font-family: var(--mono); font-size: 11px; font-weight: 500;
+  color: var(--teal);
+  padding: 5px 10px;
+  border: 1px solid var(--teal-dim);
+  border-radius: 999px;
+  background: rgba(45,212,168,0.06);
+}
+
+.live-led{
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--teal);
+  box-shadow: 0 0 6px var(--teal);
+  animation: pulseDot 1.6s ease infinite;
+}
+
+/* Metrics — real gauges, not neon cards */
+.gauges{
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.gauge{
+  padding: 14px 22px 16px;
+  border-right: 1px solid var(--line);
+  position: relative;
+}
+.gauge:last-child{ border-right: none; }
+
+.gauge-bar{
+  position: absolute; bottom:0; left:0; height: 2px; width: 0;
+  background: var(--blue);
+  transition: width 0.7s cubic-bezier(.2,.8,.2,1);
+}
+.gauge.lit .gauge-bar{ width: 100%; }
+
+.gauge-label{
+  font-family: var(--mono); font-size: 10px;
+  color: var(--steel); letter-spacing: 0.03em;
+  margin-bottom: 7px;
+}
+.gauge-value{
+  font-size: clamp(20px, 2.4vw, 27px);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.gauge-unit{ font-family: var(--mono); font-size: 10.5px; color: var(--steel); margin-top: 5px; }
+
+/* ============ CONTENT ============ */
+.content{
+  padding: 24px 28px 40px;
+  display: flex; flex-direction: column; gap: 16px;
+  max-width: 980px;
+  width: 100%;
+}
+
+/* Query console */
+.console{
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.console-head{
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap; gap: 6px;
+}
+
+.console-label{ font-size: 14px; font-weight: 700; }
+.console-hint{ font-family: var(--mono); font-size: 11px; color: var(--steel); }
+
+.console-body{
+  padding: 16px 18px;
+  display: flex; gap: 12px; align-items: stretch;
+}
+
+textarea{
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--ui);
+  font-size: 15px;
+  padding: 13px 14px;
+  resize: none;
+  height: 88px;
+  outline: none;
+  line-height: 1.5;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+textarea:focus{
+  border-color: var(--amber);
+  box-shadow: 0 0 0 3px rgba(242,178,48,0.12);
+}
+
+textarea::placeholder{ color: var(--steel-dim); }
+
+.run-btn{
+  background: var(--amber);
+  color: #1a1204;
+  border: none;
+  border-radius: var(--radius);
+  padding: 0 26px;
+  height: 88px;
+  min-width: 140px;
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.run-btn:hover{ background: #ffc44a; }
+.run-btn:active{ transform: scale(0.98); }
+.run-btn:disabled{
+  background: var(--panel-2);
+  color: var(--steel);
+  cursor: not-allowed;
+}
+
+.examples{
+  padding: 0 18px 16px;
+  display: flex; gap: 7px; flex-wrap: wrap; align-items: center;
+}
+
+.examples-label{ font-family: var(--mono); font-size: 10.5px; color: var(--steel); margin-right: 2px; }
+
+.ex-btn{
+  font-family: var(--ui); font-size: 12.5px; font-weight: 500;
+  padding: 6px 12px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.ex-btn:hover{ border-color: var(--amber-dim); color: var(--amber); background: rgba(242,178,48,0.06); }
+
+/* Progress console */
+.progress{
+  display: none;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  animation: riseIn 0.3s ease both;
+}
+.progress.visible{ display: block; }
+
+.progress-head{
+  display: flex; align-items: center; gap: 11px;
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(166,132,242,0.05);
+}
+
+.spinner{
+  width: 14px; height: 14px;
+  border: 2px solid var(--line);
+  border-top-color: var(--violet);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+.progress-title{ font-size: 13.5px; font-weight: 600; color: var(--violet); flex: 1; }
+.progress-timer{ font-family: var(--mono); font-size: 12px; color: var(--text-dim); }
+
+.progress-steps{ padding: 14px 18px; display: flex; flex-direction: column; gap: 3px; }
+
+.pstep{
+  display: flex; align-items: center; gap: 11px;
+  padding: 7px 0;
+  opacity: 0.35;
+  transition: opacity 0.35s;
+}
+.pstep.active{ opacity: 1; }
+.pstep.done{ opacity: 0.65; }
+
+.pstep-mark{
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+  transition: border-color 0.3s, background 0.3s;
+}
+.pstep.active .pstep-mark{ border-color: var(--violet); }
+.pstep.done .pstep-mark{ border-color: var(--teal); background: var(--teal); color: var(--bg); }
+.pstep.done .pstep-mark::after{ content: '✓'; }
+
+.pstep-text{ font-size: 13.5px; color: var(--text-dim); flex: 1; }
+.pstep.active .pstep-text{ color: var(--text); font-weight: 500; }
+.pstep.done .pstep-text{ color: var(--teal); }
+
+/* Error */
+.err{
+  display: none;
+  padding: 14px 18px;
+  background: rgba(232,72,60,0.08);
+  border: 1px solid var(--red-dim);
+  border-radius: var(--radius);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--red);
+}
+.err.visible{ display: block; }
+
+/* Findings */
+.findings{ display: none; }
+.findings.visible{ display: block; }
+
+.findings-label{
+  font-size: 13px; font-weight: 600; color: var(--steel);
+  margin-bottom: 10px;
+}
+
+.findings-grid{
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.f-card{
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  animation: riseIn 0.35s ease both;
+}
+.f-card:nth-child(2){ animation-delay: 0.06s; }
+.f-card:nth-child(3){ animation-delay: 0.12s; }
+.f-card:nth-child(4){ animation-delay: 0.18s; }
+
+.f-head{
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 13px;
+  border-bottom: 1px solid var(--line);
+}
+
+.f-led{ width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.f-name{ font-size: 12.5px; font-weight: 700; flex: 1; letter-spacing: 0.01em; }
+.f-lat{ font-family: var(--mono); font-size: 10.5px; color: var(--steel); }
+
+.f-body{ padding: 12px 13px; max-height: 150px; overflow-y: auto; }
+.f-body::-webkit-scrollbar{ width: 4px; }
+.f-body::-webkit-scrollbar-thumb{ background: var(--line-lit); border-radius: 2px; }
+
+.f-text{ font-size: 13px; color: var(--text-dim); line-height: 1.65; white-space: pre-wrap; }
+
+/* Final synthesis */
+.final{
+  display: none;
+  background: var(--panel);
+  border: 1px solid var(--teal-dim);
+  border-radius: var(--radius);
+  overflow: hidden;
+  animation: riseIn 0.4s ease both;
+}
+.final.visible{ display: block; }
+
+.final-head{
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 8px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(45,212,168,0.05);
+}
+
+.final-label{ font-size: 13.5px; font-weight: 700; color: var(--teal); }
+
+.final-chips{ display: flex; gap: 18px; }
+.fchip{ display: flex; align-items: baseline; gap: 5px; font-family: var(--mono); font-size: 11.5px; }
+.fchip .k{ color: var(--steel); }
+.fchip .v{ color: var(--blue); font-weight: 600; }
+
+.final-body{ padding: 22px 18px; }
+.final-text{
+  font-size: 15.5px; line-height: 1.8; color: var(--text);
+  white-space: pre-wrap;
+}
+
+.final-footer{
+  padding: 12px 18px;
+  border-top: 1px solid var(--line);
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+
+.footer-label{ font-size: 11.5px; font-weight: 600; color: var(--steel); }
+
+.a-badge{
+  font-family: var(--mono); font-size: 10px; font-weight: 500;
+  padding: 3px 9px;
+  border: 1px solid;
+  border-radius: 999px;
+}
+
+/* ============ MOBILE ============ */
+@media (max-width: 860px){
+  .shell{ grid-template-columns: 1fr; }
+
+  .rail{
+    position: static;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .rail-head{ padding: 16px 18px; }
+
+  /* collapse roster into a horizontal scroll strip on mobile so it still
+     communicates live agent state without eating vertical space */
+  .roster{
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    overflow-x: auto;
+    padding: 10px 12px;
+    gap: 6px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .rail-section{ display: none; }
+  .agent-row{
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 9px 12px;
+    border-left: none;
+    border-bottom: 2px solid transparent;
+    min-width: 118px;
+    border-radius: var(--radius);
+    background: var(--panel-2);
+  }
+  .agent-row.active{ border-bottom-color: var(--a-color, var(--blue)); }
+  .agent-row.done{ border-bottom-color: var(--teal); }
+  .agent-role{ display: none; }
+  .agent-state{ font-size: 9px; }
+
+  .rail-nav{ display: flex; overflow-x: auto; border-bottom: none; padding: 8px 12px 4px; gap: 4px; }
+  .rail-link{ border-left: none; border-bottom: 2px solid transparent; white-space: nowrap; padding: 8px 12px; }
+  .rail-link.current{ border-bottom-color: var(--amber); }
+  .rail-section:first-of-type{ display: block; padding: 12px 18px 4px; }
+
+  .session{ display: none; }
+
+  .topbar{ padding: 14px 16px; }
+  .topbar-sub{ display: none; }
+
+  .gauges{ grid-template-columns: repeat(2, 1fr); }
+  .gauge{ padding: 12px 14px 14px; }
+  .gauge:nth-child(2){ border-right: none; }
+
+  .content{ padding: 16px 14px 32px; gap: 12px; }
+
+  .console-body{ flex-direction: column; }
+  .run-btn{ height: 48px; width: 100%; }
+  textarea{ height: 96px; }
+
+  .findings-grid{ grid-template-columns: 1fr; }
+
+  .final-chips{ gap: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
+
+</style>
 </head>
 <body>
 
-<div class="stripe"></div>
+<div class="shell">
 
-<div class="layout">
+  <!-- ═══ RAIL ═══ -->
+  <aside class="rail">
 
-    <!-- ═══ SIDEBAR ═══ -->
-    <aside class="sidebar">
-
-        <div class="sb-logo">
-            <div class="sb-tag">// PHASE 4 — FINAL</div>
-            <div class="sb-title">INDUSTRIAL<br><span>AI</span> COPILOT</div>
-            <div class="sb-sub">MULTI-AGENT ORCHESTRATION ENGINE</div>
-        </div>
-
-        <!-- Nav -->
-        <div class="nav-block">
-            <div class="sb-section-label">// INTERFACES</div>
-            <a href="/ui"            class="nav-item"><span class="nav-icon">⬡</span><span class="nav-text">RAG SEARCH</span></a>
-            <a href="/agent-ui"      class="nav-item"><span class="nav-icon">◈</span><span class="nav-text">AGENT MODE</span></a>
-            <a href="/multiagent-ui" class="nav-item active"><span class="nav-icon">◉</span><span class="nav-text">ORCHESTRATION</span></a>
-            <a href="/ingest-ui"     class="nav-item"><span class="nav-icon">⬆</span><span class="nav-text">KNOWLEDGE BASE</span></a>
-        </div>
-
-        <!-- Agent roster -->
-        <div class="roster-block">
-            <div class="sb-section-label">// AGENT ROSTER</div>
-
-            <div class="agent-item" id="ai-supervisor" style="--a-color:var(--orange);">
-                <div class="a-dot"></div>
-                <div class="a-info">
-                    <div class="a-name">SUPERVISOR</div>
-                    <div class="a-role">Query analysis · Delegation</div>
-                </div>
-                <div class="a-state" id="as-supervisor">READY</div>
-            </div>
-
-            <div class="agent-item" id="ai-retrieval" style="--a-color:var(--cyan);">
-                <div class="a-dot"></div>
-                <div class="a-info">
-                    <div class="a-name">RETRIEVAL</div>
-                    <div class="a-role">Documentation · Citations</div>
-                </div>
-                <div class="a-state" id="as-retrieval">IDLE</div>
-            </div>
-
-            <div class="agent-item" id="ai-telemetry" style="--a-color:var(--green);">
-                <div class="a-dot"></div>
-                <div class="a-info">
-                    <div class="a-name">TELEMETRY</div>
-                    <div class="a-role">Live sensors · Fault detection</div>
-                </div>
-                <div class="a-state" id="as-telemetry">IDLE</div>
-            </div>
-
-            <div class="agent-item" id="ai-analysis" style="--a-color:var(--yellow);">
-                <div class="a-dot"></div>
-                <div class="a-info">
-                    <div class="a-name">ANALYSIS</div>
-                    <div class="a-role">Spec checks · Calculations</div>
-                </div>
-                <div class="a-state" id="as-analysis">IDLE</div>
-            </div>
-
-            <div class="agent-item" id="ai-safety" style="--a-color:var(--red);">
-                <div class="a-dot"></div>
-                <div class="a-info">
-                    <div class="a-name">SAFETY</div>
-                    <div class="a-role">Risk assessment · Compliance</div>
-                </div>
-                <div class="a-state" id="as-safety">IDLE</div>
-            </div>
-
-            <div class="agent-item" id="ai-report" style="--a-color:var(--purple);">
-                <div class="a-dot"></div>
-                <div class="a-info">
-                    <div class="a-name">REPORT</div>
-                    <div class="a-role">Synthesis · Final response</div>
-                </div>
-                <div class="a-state" id="as-report">IDLE</div>
-            </div>
-        </div>
-
-        <!-- Stats -->
-        <div class="stats-block">
-            <div class="sb-section-label">// SESSION</div>
-            <div class="stat-row"><span class="stat-label">Queries run</span><span class="stat-val" id="ss-queries">0</span></div>
-            <div class="stat-row"><span class="stat-label">Last agents</span><span class="stat-val" id="ss-agents">—</span></div>
-            <div class="stat-row"><span class="stat-label">Last latency</span><span class="stat-val" id="ss-latency">—</span></div>
-        </div>
-
-    </aside>
-
-    <!-- ═══ MAIN ═══ -->
-    <div class="main">
-
-        <!-- Top bar -->
-        <div class="top-bar">
-            <div class="tb-left">
-                <div class="tb-title">MULTI-AGENT ORCHESTRATION</div>
-                <div class="tb-divider"></div>
-                <div class="tb-sub">SUPERVISOR · SPECIALISTS · SYNTHESIS</div>
-            </div>
-            <div class="live-badge"><div class="live-dot"></div>LIVE</div>
-        </div>
-
-        <!-- Metrics strip -->
-        <div class="metrics-strip">
-            <div class="metric-cell" id="mc-queries">
-                <div class="m-label">QUERIES RUN</div>
-                <div class="m-value" id="mv-queries">0</div>
-                <div class="m-unit">this session</div>
-            </div>
-            <div class="metric-cell" id="mc-agents">
-                <div class="m-label">AGENTS USED</div>
-                <div class="m-value" id="mv-agents">—</div>
-                <div class="m-unit">last query</div>
-            </div>
-            <div class="metric-cell" id="mc-latency">
-                <div class="m-label">TOTAL LATENCY</div>
-                <div class="m-value" id="mv-latency">—</div>
-                <div class="m-unit">seconds</div>
-            </div>
-            <div class="metric-cell" id="mc-status">
-                <div class="m-label">SYSTEM</div>
-                <div class="m-value" id="mv-status" style="font-size:14px;margin-top:5px;">READY</div>
-                <div class="m-unit">orchestrator</div>
-            </div>
-        </div>
-
-        <!-- Content -->
-        <div class="content">
-
-            <!-- Query -->
-            <div class="query-panel">
-                <div class="qp-head">
-                    <span class="qp-label">// ORCHESTRATION QUERY</span>
-                    <span class="qp-hint">Supervisor auto-selects specialists · ENTER to run</span>
-                </div>
-                <div class="qp-body">
-                    <textarea id="questionInput"
-                        placeholder="Describe the problem. The supervisor analyses your query and coordinates the right specialists automatically..."
-                        onkeydown="handleKey(event)"></textarea>
-                    <button class="run-btn" id="submitBtn" onclick="submitQuery()">ORCHESTRATE</button>
-                </div>
-                <div class="qp-examples">
-                    <span class="ex-label">TRY →</span>
-                    <button class="ex-btn" onclick="setQuery(this.textContent)">Generate full plant health report</button>
-                    <button class="ex-btn" onclick="setQuery(this.textContent)">Diagnose pump-001 fault and recommend action</button>
-                    <button class="ex-btn" onclick="setQuery(this.textContent)">Is it safe to continue operating motor-001?</button>
-                    <button class="ex-btn" onclick="setQuery(this.textContent)">Audit all equipment against safety standards</button>
-                    <button class="ex-btn" onclick="setQuery(this.textContent)">What maintenance is overdue across all assets?</button>
-                </div>
-            </div>
-
-            <!-- Progress -->
-            <div class="prog-panel" id="progPanel">
-                <div class="prog-head">
-                    <div class="prog-spinner"></div>
-                    <span class="prog-title">// MULTI-AGENT ORCHESTRATION IN PROGRESS</span>
-                    <span class="prog-timer" id="progTimer">0.0s</span>
-                </div>
-                <div class="prog-steps">
-                    <div class="ps" id="ps1"><div class="ps-bar"></div><span class="ps-text">Supervisor analysing query intent</span><span class="ps-check">✓</span></div>
-                    <div class="ps" id="ps2"><div class="ps-bar"></div><span class="ps-text">Selecting specialist agents</span><span class="ps-check">✓</span></div>
-                    <div class="ps" id="ps3"><div class="ps-bar"></div><span class="ps-text">Dispatching to specialists</span><span class="ps-check">✓</span></div>
-                    <div class="ps" id="ps4"><div class="ps-bar"></div><span class="ps-text">Collecting specialist findings</span><span class="ps-check">✓</span></div>
-                    <div class="ps" id="ps5"><div class="ps-bar"></div><span class="ps-text">Report Agent synthesising response</span><span class="ps-check">✓</span></div>
-                </div>
-            </div>
-
-            <!-- Error -->
-            <div class="err-panel" id="errPanel"></div>
-
-            <!-- Findings -->
-            <div class="findings" id="findings">
-                <div class="findings-label">// SPECIALIST FINDINGS</div>
-                <div class="findings-grid" id="findingsGrid"></div>
-            </div>
-
-            <!-- Final -->
-            <div class="final" id="finalPanel">
-                <div class="final-head">
-                    <span class="final-label">// SYNTHESISED RESPONSE — REPORT AGENT</span>
-                    <div class="final-chips">
-                        <div class="chip"><span class="chip-l">AGENTS</span><span class="chip-v" id="chip-agents">—</span></div>
-                        <div class="chip"><span class="chip-l">TIME</span><span class="chip-v" id="chip-time">—</span></div>
-                    </div>
-                </div>
-                <div class="final-body">
-                    <div class="final-text" id="finalText"></div>
-                </div>
-                <div class="final-footer">
-                    <span class="footer-label">// CONTRIBUTED BY</span>
-                    <div id="agentTags" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
-                </div>
-            </div>
-
-        </div>
+    <div class="rail-head">
+      <div class="rail-eyebrow">Phase 4 — Final</div>
+      <div class="rail-title">Industrial <em>AI</em> Copilot</div>
+      <div class="rail-sub">Multi-agent orchestration engine</div>
     </div>
+
+    <div class="rail-nav">
+      <div class="rail-section">Interfaces</div>
+      <a href="/ui" class="rail-link"><span class="glyph">◇</span>RAG Search</a>
+      <a href="/agent-ui" class="rail-link"><span class="glyph">◆</span>Agent Mode</a>
+      <a href="/multiagent-ui" class="rail-link current"><span class="glyph">●</span>Orchestration</a>
+      <a href="/ingest-ui" class="rail-link"><span class="glyph">↑</span>Knowledge Base</a>
+    </div>
+
+    <div class="roster">
+      <div class="rail-section">Agent Roster</div>
+
+      <div class="agent-row" id="ai-supervisor" style="--a-color:var(--amber);">
+        <div class="agent-led"></div>
+        <div class="agent-meta">
+          <div class="agent-name">Supervisor</div>
+          <div class="agent-role">Query analysis · Delegation</div>
+        </div>
+        <div class="agent-state" id="as-supervisor">READY</div>
+      </div>
+
+      <div class="agent-row" id="ai-retrieval" style="--a-color:var(--blue);">
+        <div class="agent-led"></div>
+        <div class="agent-meta">
+          <div class="agent-name">Retrieval</div>
+          <div class="agent-role">Documentation · Citations</div>
+        </div>
+        <div class="agent-state" id="as-retrieval">IDLE</div>
+      </div>
+
+      <div class="agent-row" id="ai-telemetry" style="--a-color:var(--teal);">
+        <div class="agent-led"></div>
+        <div class="agent-meta">
+          <div class="agent-name">Telemetry</div>
+          <div class="agent-role">Live sensors · Fault detection</div>
+        </div>
+        <div class="agent-state" id="as-telemetry">IDLE</div>
+      </div>
+
+      <div class="agent-row" id="ai-analysis" style="--a-color:var(--amber);">
+        <div class="agent-led"></div>
+        <div class="agent-meta">
+          <div class="agent-name">Analysis</div>
+          <div class="agent-role">Spec checks · Calculations</div>
+        </div>
+        <div class="agent-state" id="as-analysis">IDLE</div>
+      </div>
+
+      <div class="agent-row" id="ai-safety" style="--a-color:var(--red);">
+        <div class="agent-led"></div>
+        <div class="agent-meta">
+          <div class="agent-name">Safety</div>
+          <div class="agent-role">Risk assessment · Compliance</div>
+        </div>
+        <div class="agent-state" id="as-safety">IDLE</div>
+      </div>
+
+      <div class="agent-row" id="ai-report" style="--a-color:var(--violet);">
+        <div class="agent-led"></div>
+        <div class="agent-meta">
+          <div class="agent-name">Report</div>
+          <div class="agent-role">Synthesis · Final response</div>
+        </div>
+        <div class="agent-state" id="as-report">IDLE</div>
+      </div>
+    </div>
+
+    <div class="session">
+      <div class="rail-section" style="padding-left:0;">Session</div>
+      <div class="session-row"><span class="k">Queries run</span><span class="v" id="ss-queries">0</span></div>
+      <div class="session-row"><span class="k">Last agents</span><span class="v" id="ss-agents">—</span></div>
+      <div class="session-row"><span class="k">Last latency</span><span class="v" id="ss-latency">—</span></div>
+    </div>
+
+  </aside>
+
+  <!-- ═══ MAIN ═══ -->
+  <div class="main">
+
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">Multi-Agent Orchestration</div>
+        <div class="topbar-sub">Supervisor · Specialists · Synthesis</div>
+      </div>
+      <div class="live-pill"><div class="live-led"></div>Live</div>
+    </div>
+
+    <div class="gauges">
+      <div class="gauge" id="mc-queries">
+        <div class="gauge-label">Queries run</div>
+        <div class="gauge-value" id="mv-queries">0</div>
+        <div class="gauge-unit">this session</div>
+        <div class="gauge-bar"></div>
+      </div>
+      <div class="gauge" id="mc-agents">
+        <div class="gauge-label">Agents used</div>
+        <div class="gauge-value" id="mv-agents">—</div>
+        <div class="gauge-unit">last query</div>
+        <div class="gauge-bar"></div>
+      </div>
+      <div class="gauge" id="mc-latency">
+        <div class="gauge-label">Total latency</div>
+        <div class="gauge-value" id="mv-latency">—</div>
+        <div class="gauge-unit">seconds</div>
+        <div class="gauge-bar"></div>
+      </div>
+      <div class="gauge" id="mc-status">
+        <div class="gauge-label">System</div>
+        <div class="gauge-value" id="mv-status" style="font-size:16px;">READY</div>
+        <div class="gauge-unit">orchestrator</div>
+        <div class="gauge-bar"></div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <div class="console">
+        <div class="console-head">
+          <span class="console-label">Orchestration Query</span>
+          <span class="console-hint">Supervisor auto-selects specialists · Enter to run</span>
+        </div>
+        <div class="console-body">
+          <textarea id="questionInput"
+            placeholder="Describe the problem. The supervisor analyses your query and coordinates the right specialists automatically..."
+            onkeydown="handleKey(event)"></textarea>
+          <button class="run-btn" id="submitBtn" onclick="submitQuery()">Orchestrate</button>
+        </div>
+        <div class="examples">
+          <span class="examples-label">Try →</span>
+          <button class="ex-btn" onclick="setQuery(this.textContent)">Generate full plant health report</button>
+          <button class="ex-btn" onclick="setQuery(this.textContent)">Diagnose pump-001 fault and recommend action</button>
+          <button class="ex-btn" onclick="setQuery(this.textContent)">Is it safe to continue operating motor-001?</button>
+          <button class="ex-btn" onclick="setQuery(this.textContent)">Audit all equipment against safety standards</button>
+          <button class="ex-btn" onclick="setQuery(this.textContent)">What maintenance is overdue across all assets?</button>
+        </div>
+      </div>
+
+      <div class="progress" id="progPanel">
+        <div class="progress-head">
+          <div class="spinner"></div>
+          <span class="progress-title">Multi-agent orchestration in progress</span>
+          <span class="progress-timer" id="progTimer">0.0s</span>
+        </div>
+        <div class="progress-steps">
+          <div class="pstep" id="ps1"><div class="pstep-mark"></div><span class="pstep-text">Supervisor analysing query intent</span></div>
+          <div class="pstep" id="ps2"><div class="pstep-mark"></div><span class="pstep-text">Selecting specialist agents</span></div>
+          <div class="pstep" id="ps3"><div class="pstep-mark"></div><span class="pstep-text">Dispatching to specialists</span></div>
+          <div class="pstep" id="ps4"><div class="pstep-mark"></div><span class="pstep-text">Collecting specialist findings</span></div>
+          <div class="pstep" id="ps5"><div class="pstep-mark"></div><span class="pstep-text">Report Agent synthesising response</span></div>
+        </div>
+      </div>
+
+      <div class="err" id="errPanel"></div>
+
+      <div class="findings" id="findings">
+        <div class="findings-label">Specialist Findings</div>
+        <div class="findings-grid" id="findingsGrid"></div>
+      </div>
+
+      <div class="final" id="finalPanel">
+        <div class="final-head">
+          <span class="final-label">Synthesised Response — Report Agent</span>
+          <div class="final-chips">
+            <div class="fchip"><span class="k">Agents</span><span class="v" id="chip-agents">—</span></div>
+            <div class="fchip"><span class="k">Time</span><span class="v" id="chip-time">—</span></div>
+          </div>
+        </div>
+        <div class="final-body">
+          <div class="final-text" id="finalText"></div>
+        </div>
+        <div class="final-footer">
+          <span class="footer-label">Contributed by</span>
+          <div id="agentTags" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
 </div>
 
 <script>
@@ -797,11 +835,11 @@
 
     // Agent color map for finding cards and badges
     const AGENT_COLORS = {
-        "Retrieval Agent": { color: "#00c8f0", bg: "rgba(0,200,240,0.08)"  },
-        "Telemetry Agent": { color: "#00e676", bg: "rgba(0,230,118,0.08)"  },
-        "Analysis Agent":  { color: "#ffd740", bg: "rgba(255,215,64,0.08)" },
-        "Safety Agent":    { color: "#ff5555", bg: "rgba(255,85,85,0.08)"  },
-        "Report Agent":    { color: "#b06aff", bg: "rgba(176,106,255,0.08)"},
+        "Retrieval Agent": { color: "#4f9ef2", bg: "rgba(79,158,242,0.08)"  },
+        "Telemetry Agent": { color: "#2dd4a8", bg: "rgba(45,212,168,0.08)"  },
+        "Analysis Agent":  { color: "#f2b230", bg: "rgba(242,178,48,0.08)" },
+        "Safety Agent":    { color: "#e8483c", bg: "rgba(232,72,60,0.08)"  },
+        "Report Agent":    { color: "#a684f2", bg: "rgba(166,132,242,0.08)"},
     };
 
     // Maps agent name to sidebar element IDs
@@ -824,7 +862,7 @@
     function resetAll() {
         const items  = ['ai-supervisor','ai-retrieval','ai-telemetry','ai-analysis','ai-safety','ai-report'];
         const states = ['as-supervisor','as-retrieval','as-telemetry','as-analysis','as-safety','as-report'];
-        items.forEach(id  => { const el = document.getElementById(id);  if(el) el.className = 'agent-item'; });
+        items.forEach(id  => { const el = document.getElementById(id);  if(el) el.className = 'agent-row'; });
         states.forEach((id,i) => { const el = document.getElementById(id); if(el) el.textContent = i===0?'READY':'IDLE'; });
     }
 
@@ -832,7 +870,7 @@
         const ids = AGENT_IDS[name]; if(!ids) return;
         const item = document.getElementById(ids.item);
         const st   = document.getElementById(ids.state);
-        if(item) { item.className = 'agent-item active'; }
+        if(item) { item.className = 'agent-row active'; }
         if(st)   { st.textContent = 'WORKING'; }
     }
 
@@ -840,7 +878,7 @@
         const ids = AGENT_IDS[name]; if(!ids) return;
         const item = document.getElementById(ids.item);
         const st   = document.getElementById(ids.state);
-        if(item) { item.className = 'agent-item done'; }
+        if(item) { item.className = 'agent-row done'; }
         if(st)   { st.textContent = 'DONE'; }
     }
 
@@ -883,8 +921,8 @@
             card.style.borderLeft = `2px solid ${c.color}`;
             card.innerHTML = `
                 <div class="f-head" style="background:${c.bg};">
-                    <div class="f-dot" style="background:${c.color};box-shadow:0 0 6px ${c.color};"></div>
-                    <span class="f-name" style="color:${c.color};">${r.agent_name.toUpperCase()}</span>
+                    <div class="f-led" style="background:${c.color};box-shadow:0 0 6px ${c.color};"></div>
+                    <span class="f-name" style="color:${c.color};">${r.agent_name}</span>
                     <span class="f-lat">${r.latency}s</span>
                 </div>
                 <div class="f-body">
@@ -904,7 +942,7 @@
             tag.className = 'a-badge';
             tag.style.borderColor = c.color;
             tag.style.color = c.color;
-            tag.textContent = name.toUpperCase();
+            tag.textContent = name;
             container.appendChild(tag);
         });
     }
@@ -939,7 +977,7 @@
         // Activate supervisor
         const supItem = document.getElementById('ai-supervisor');
         const supSt   = document.getElementById('as-supervisor');
-        if(supItem) supItem.className = 'agent-item active';
+        if(supItem) supItem.className = 'agent-row active';
         if(supSt)   supSt.textContent = 'ANALYSING';
 
         startStepAnimation();
@@ -964,7 +1002,7 @@
             });
 
             // Animate supervisor done
-            if(supItem) supItem.className = 'agent-item done';
+            if(supItem) supItem.className = 'agent-row done';
             if(supSt)   supSt.textContent = 'DONE';
 
             // Animate each specialist
@@ -978,14 +1016,14 @@
             setTimeout(() => {
                 const ri = document.getElementById('ai-report');
                 const rs = document.getElementById('as-report');
-                if(ri) ri.className = 'agent-item active';
+                if(ri) ri.className = 'agent-row active';
                 if(rs) rs.textContent = 'SYNTHESISING';
             }, reportDelay);
 
             setTimeout(() => {
                 const ri = document.getElementById('ai-report');
                 const rs = document.getElementById('as-report');
-                if(ri) ri.className = 'agent-item done';
+                if(ri) ri.className = 'agent-row done';
                 if(rs) rs.textContent = 'DONE';
             }, reportDelay + 800);
 
@@ -1010,7 +1048,7 @@
             document.getElementById('progPanel').classList.remove('visible');
             resetAll();
             const err = document.getElementById('errPanel');
-            err.textContent = `ORCHESTRATION ERROR: ${e.message}`;
+            err.textContent = `Orchestration error: ${e.message}`;
             err.classList.add('visible');
             document.getElementById('mv-status').textContent = 'ERROR';
         } finally {
@@ -1021,3 +1059,4 @@
 
 </body>
 </html>
+

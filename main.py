@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 pipeline     = None
 agent        = None
 vector_store = None  # Kept globally so ingest router can update it live
+is_ready     = False  # Readiness flag for ALB health checks
 
 async def initialize_pipeline():
     global pipeline, agent, vector_store, is_ready
@@ -34,7 +35,7 @@ async def initialize_pipeline():
     try:
         logger.info("Initializing pipeline in background...")
 
-        # Pull pre-built vector store from S3 before anything else touches it
+        # Pull pre-built vector store and raw docs from S3 before anything else touches them
         hydrate_vectorstore_from_s3()
         hydrate_raw_docs_from_s3()
 
@@ -50,15 +51,6 @@ async def initialize_pipeline():
         reranker  = CohereReranker(top_n=5)
         pipeline  = RAGPipeline(retriever=retriever, reranker=reranker)
 
-        is_ready = True
-        logger.info("Pipeline ready. System operational.")
-
-    except Exception as e:
-        logger.error(f"Pipeline initialization failed: {e}")
-        # is_ready stays False — ALB will keep failing health checks
-        # and ECS will eventually cycle the task, which is correct behavior
-
-
         # Initialize single agent
         agent = MaintenanceAgent(pipeline=pipeline)
         logger.info("Maintenance Agent ready.")
@@ -67,9 +59,13 @@ async def initialize_pipeline():
         initialize_multi_agent_system(pipeline)
         logger.info("Multi-Agent System ready.")
 
+        is_ready = True
+        logger.info("Pipeline ready. System operational.")
+
     except Exception as e:
         logger.error(f"Pipeline initialization failed: {e}")
-
+        # is_ready stays False — ALB will keep failing health checks
+        # and ECS will eventually cycle the task, which is correct behavior
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -81,7 +77,6 @@ async def lifespan(app: FastAPI):
     asyncio.create_task(initialize_pipeline())
     yield
     logger.info("Shutting down...")
-
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -105,26 +100,21 @@ app.include_router(ingest_router)
 # Serve frontend
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-
 @app.get("/ui")
 async def frontend():
     return FileResponse("static/index.html")
-
 
 @app.get("/agent-ui")
 async def agent_frontend():
     return FileResponse("static/agent.html")
 
-
 @app.get("/ingest-ui")
 async def ingest_frontend():
     return FileResponse("static/ingest.html")
 
-
 @app.get("/multiagent-ui")
 async def multiagent_frontend():
     return FileResponse("static/multiagent.html")
-
 
 # --- Request/Response Models ---
 class QueryRequest(BaseModel):
@@ -137,7 +127,6 @@ class QueryRequest(BaseModel):
             }
         }
 
-
 class QueryResponse(BaseModel):
     answer: str
     sources: list[str]
@@ -145,19 +134,16 @@ class QueryResponse(BaseModel):
     caveat: str
     processing_time_seconds: float
 
-
 class AgentRequest(BaseModel):
     question: str
     image_base64: str = None
     analysis_type: str = "general"
-
 
 class AgentResponse(BaseModel):
     answer: str
     tools_used: list[str]
     steps_taken: int
     processing_time_seconds: float
-
 
 # --- Endpoints ---
 @app.get("/")
@@ -169,9 +155,6 @@ async def root():
         "docs":    "/docs",
         "phase":   "Phase 4 — Multi-Agent orchestration"
     }
-
-# Global readiness flag
-is_ready = False
 
 @app.get("/health")
 async def health():
@@ -187,7 +170,6 @@ async def health():
         "agent_loaded":    agent is not None,
         "vector_store":    vector_store is not None,
     }
-
 
 @app.post("/query", response_model=QueryResponse)
 async def query(request: QueryRequest):
@@ -224,7 +206,6 @@ async def query(request: QueryRequest):
         logger.error(f"Query failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @app.get("/documents")
 async def list_documents():
     """List all indexed documents."""
@@ -236,7 +217,6 @@ async def list_documents():
         "indexed_documents": [d.name for d in docs],
         "total":             len(docs)
     }
-
 
 @app.post("/agent", response_model=AgentResponse)
 async def run_agent(request: AgentRequest):
@@ -309,7 +289,6 @@ async def run_agent(request: AgentRequest):
         logger.error(f"Agent query failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @app.get("/telemetry")
 async def telemetry_overview():
     """Get health overview of all equipment in the plant."""
@@ -320,25 +299,21 @@ async def telemetry_overview():
         "alerts":       sum(e["alert_count"] for e in equipment),
     }
 
-
 @app.get("/telemetry/{equipment_id}")
 async def telemetry_readings(equipment_id: str):
     """Get live sensor readings for a specific equipment asset."""
     data = fetch_telemetry(equipment_id)
     if not data:
-        from fastapi import HTTPException
         raise HTTPException(
             status_code=404,
             detail=f"Equipment '{equipment_id}' not found."
         )
     return data
 
-
 # ── Multi-Agent Endpoints ─────────────────────────────────────────────────────
 
 class MultiAgentRequest(BaseModel):
     question: str
-
 
 @app.post("/multiagent")
 async def run_multi_agent(request: MultiAgentRequest):
@@ -384,7 +359,6 @@ async def run_multi_agent(request: MultiAgentRequest):
         logger.error(f"Multi-agent query failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @app.get("/multiagent/agents")
 async def list_agents():
     """List available specialist agents and their roles."""
@@ -398,8 +372,8 @@ async def list_agents():
         ]
     }
 
-
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 7860))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
