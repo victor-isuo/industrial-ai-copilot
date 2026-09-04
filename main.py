@@ -18,6 +18,7 @@ from src.agents.maintenance_agent import MaintenanceAgent
 from src.agents.multi_agent_system import initialize_multi_agent_system, get_multi_agent_system
 from src.api.ingest_router import router as ingest_router, set_vector_store
 from src.api.telemetry_api import get_equipment_telemetry as fetch_telemetry, list_equipment
+from src.core.s3_store import hydrate_vectorstore_from_s3, hydrate_raw_docs_from_s3
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -33,6 +34,11 @@ async def initialize_pipeline():
 
     try:
         logger.info("Initializing pipeline in background...")
+
+        # Pull pre-built vector store from S3 before anything else touches it
+        hydrate_vectorstore_from_s3()
+        hydrate_raw_docs_from_s3()
+
         docs   = load_documents()
         chunks = chunk_documents(docs)
 
@@ -41,7 +47,7 @@ async def initialize_pipeline():
             return
 
         logger.info("Building vector store from documents...")
-        vector_store = create_vector_store(chunks)
+        vector_store = load_vector_store()
 
         # Inject vector store into ingest router so uploads update the live index
         set_vector_store(vector_store)
