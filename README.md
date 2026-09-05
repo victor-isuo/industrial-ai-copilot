@@ -13,14 +13,18 @@ pinned: false
 A production-grade agentic AI platform built across four progressive phases —
 from hybrid document retrieval to autonomous multi-agent fault diagnosis.
 
-## 🔴 Live Demo
+## 🔴 Live Demo — Deployed on AWS (ECS Fargate)
 
 | Interface | URL | Description |
 |-----------|-----|-------------|
-| Multi-Agent | https://victorisuo-industrial-ai-copilot.hf.space/multiagent-ui | Supervisor + 4 specialist agents |
-| Agent Mode | https://victorisuo-industrial-ai-copilot.hf.space/agent-ui | 9-tool autonomous agent |
-| RAG Search | https://victorisuo-industrial-ai-copilot.hf.space/ui | Hybrid retrieval over 27 documents |
-| Knowledge Base | https://victorisuo-industrial-ai-copilot.hf.space/ingest-ui | Live document ingestion |
+| Multi-Agent | http://industrial-copilot-alb-998145074.us-east-1.elb.amazonaws.com/multiagent-ui | Supervisor + 4 specialist agents |
+| Agent Mode | http://industrial-copilot-alb-998145074.us-east-1.elb.amazonaws.com/agent-ui | 9-tool autonomous agent |
+| RAG Search | http://industrial-copilot-alb-998145074.us-east-1.elb.amazonaws.com/ui | Hybrid retrieval over 27 documents |
+| Knowledge Base | http://industrial-copilot-alb-998145074.us-east-1.elb.amazonaws.com/ingest-ui | Live document ingestion |
+
+> Note: served over HTTP via the raw ALB DNS name. A custom domain + ACM-issued TLS certificate is the natural next step for HTTPS — deferred here since it requires a purchased domain, and doesn't change the underlying architecture. See [Design Decisions & Tradeoffs](#design-decisions--tradeoffs).
+
+This system was originally deployed on Hugging Face Spaces and has since been migrated to a production AWS architecture — containerized on ECS Fargate behind an Application Load Balancer, with S3-backed persistence and a GitHub Actions CI/CD pipeline. See [Deployment Architecture](#deployment-architecture) below.
 
 ---
 
@@ -54,6 +58,68 @@ Engineer Query ─────────────────────�
                                   ↓
                      Cited, Actionable Response
 ```
+
+---
+
+## Deployment Architecture
+
+This system was migrated from Hugging Face Spaces to a containerized, production-pattern AWS deployment — chosen deliberately as a hands-on learning sprint in cloud infrastructure, using ECS Fargate over a simpler PaaS option (see ADR-002 in `/docs`) to gain direct experience with VPC networking, load balancing, and IAM design under real production constraints.
+
+```
+GitHub (main branch)
+        ↓  push
+GitHub Actions — OIDC federation (no long-lived AWS credentials in CI)
+        ↓  docker build + push
+Amazon ECR — private image registry
+        ↓  force new deployment
+ECS Fargate Service (industrial-copilot-cluster)
+        ↓
+Application Load Balancer ──→ Internet
+        ↓
+ECS Task (Fargate, 1 vCPU / 3GB)
+   ├── FastAPI app (Uvicorn, port 7860)
+   ├── Secrets injected at runtime via AWS Secrets Manager
+   │    (GROQ_API_KEY, COHERE_API_KEY, GEMINI_API_KEY, LANGCHAIN_API_KEY)
+   └── Hydrates on startup from Amazon S3:
+        ├── chroma_index.tar.gz  → pre-built ChromaDB vector store
+        └── raw_docs.tar.gz      → source PDFs (for BM25 index construction)
+```
+
+### CI/CD Pipeline
+
+Every push to `main` triggers an automated build-and-push pipeline via GitHub Actions:
+
+```yaml
+GitHub push → main
+    ↓
+Checkout code
+    ↓
+Assume AWS IAM role via OIDC (short-lived, auto-expiring credentials)
+    ↓
+Authenticate to Amazon ECR
+    ↓
+Build Docker image → tag → push to ECR
+```
+
+**Why OIDC over static access keys:** GitHub Actions authenticates to AWS by requesting a short-lived token and assuming a scoped IAM role — no AWS access keys are stored in GitHub at any point. The trust policy on the role restricts assumption to `repo:victor-isuo/industrial-ai-copilot:ref:refs/heads/main` specifically, so no other repository or branch can use this trust relationship. This eliminates the standard risk of long-lived credentials sitting in CI secrets.
+
+Note: image push to ECR is currently automated; the ECS service redeploy (pulling the new image) is triggered manually via "Force new deployment." Automating this final step with the `amazon-ecs-deploy-task-definition` GitHub Action is a documented next step (see Limitations & Next Steps).
+
+### S3-Backed Persistence — Why Not Bake Data Into the Image
+
+An earlier iteration attempted to load the knowledge base from PDFs copied directly into the Docker image. This was reworked once `.gitignore` (correctly) excluded large binary data files from version control, surfacing a more fundamental architecture question: should application code and data artifacts live in the same deployable unit?
+
+The current design separates them. On container startup, `s3_store.py` hydrates two artifacts from an S3 bucket before the FastAPI app begins serving:
+- The **pre-built ChromaDB vector store** — downloaded and extracted directly, avoiding re-embedding 5,091 chunks (and the associated API cost) on every container restart
+- **Raw source PDFs** — still needed at startup to rebuild the BM25 sparse index locally, which is inexpensive (no external API calls) but does require the source text
+
+This means the Docker image contains only application code. Data lives in S3, versioned independently of the codebase — the same separation of concerns a production RAG system would need to support index updates without rebuilding and redeploying the container.
+
+### Health Checks: Liveness vs. Readiness
+
+An early deployment issue surfaced a subtle but important distinction. The `/health` endpoint originally returned HTTP 200 unconditionally, the moment Uvicorn started — before the S3 hydration, document chunking, and vector store loading had completed. The ALB marked the task healthy immediately, then killed it when real requests failed against a not-yet-initialized pipeline, producing a restart loop.
+
+The fix: `/health` now returns `503` until an explicit `is_ready` flag is set at the end of `initialize_pipeline()`, and only returns `200` once the vector store, retriever, and agent are fully constructed. Combined with an increased ALB health check grace period (300s) and a lowered healthy threshold (2 consecutive checks), this correctly separates "the process is alive" from "the application is ready to serve" — a distinction that matters for any service with non-trivial startup work.
 
 ---
 
@@ -299,6 +365,8 @@ Total latency: ~30s for full plant audit
 
 **What would change under a strict latency SLA:** Under a sub-5-second SLA for all queries, three architectural changes would be required. First, async parallel agent execution — specialists running concurrently rather than sequentially would reduce multi-agent latency by 60–70%. Second, a query classifier at the entry point that routes simple queries directly to the single agent without supervisor overhead. Third, response caching for high-frequency queries like plant-wide health overviews. These are not implemented in the current system because the demo use case does not require them — but the architecture is explicitly designed to support all three without structural changes.
 
+**Why HTTP, not HTTPS:** The live demo is served over plain HTTP via the ALB's default DNS name. Issuing a TLS certificate through AWS Certificate Manager requires a domain the certificate can be issued for — ACM cannot issue a certificate for an AWS-owned `*.elb.amazonaws.com` name. Adding HTTPS is a ~30 minute change once a domain is registered: point a Route 53 (or external registrar) record at the ALB, request an ACM certificate, attach an HTTPS listener on port 443, and redirect port 80 to 443. This is deliberately deferred rather than solved with a workaround, since the correct fix requires an owned domain rather than an ALB-side setting.
+
 ---
 
 ## Complete Tool Registry (9 Tools)
@@ -350,7 +418,12 @@ Agent reasoning fully traced via LangSmith. Every tool call, latency, token usag
 | Telemetry | MQTT via HiveMQ public broker |
 | MCP | Model Context Protocol (mcp 1.26.0) |
 | API | FastAPI |
-| Deployment | Hugging Face Spaces (Docker) |
+| Deployment | AWS ECS Fargate, behind an Application Load Balancer |
+| Container Registry | Amazon ECR |
+| Persistence | Amazon S3 (vector store + source documents) |
+| Secrets | AWS Secrets Manager |
+| CI/CD | GitHub Actions, OIDC federation to AWS (no static credentials) |
+| IaC / Access Control | IAM least-privilege policies, scoped per service identity |
 
 ---
 
@@ -421,6 +494,12 @@ GROQ_API_KEY=your_key
 COHERE_API_KEY=your_key
 LANGCHAIN_API_KEY=your_key
 GEMINI_API_KEY=your_key
+
+# Optional — only needed to test S3 hydration locally.
+# If omitted, the app falls back to local data/vectorstore and data/raw if present.
+AWS_ACCESS_KEY_ID=your_key
+AWS_SECRET_ACCESS_KEY=your_key
+S3_BUCKET_NAME=industrial-ai-copilot-index
 ```
 
 ```bash
@@ -428,6 +507,16 @@ uvicorn main:app --reload             # Full server
 python -m src.mcp.mcp_server          # MCP server standalone
 python -m src.evaluation.eval_runner  # Evaluation suite
 ```
+
+### Deploying Your Own Copy to AWS
+
+The full deployment is reproducible via:
+1. Build and push the image to a private ECR repository
+2. Create an ECS Fargate cluster, task definition (referencing the ECR image and Secrets Manager ARNs), and service
+3. Attach an Application Load Balancer with a target group health-checked on `/health`
+4. Upload `data/vectorstore` and `data/raw` as tarballs to an S3 bucket; the app hydrates both on startup via `src/core/s3_store.py`
+5. Configure GitHub Actions with OIDC federation to auto-build and push on every push to `main`
+
 
 ---
 
@@ -440,6 +529,7 @@ python -m src.evaluation.eval_runner  # Evaluation suite
 - [x] Phase 3C — Multimodal vision (gauges, nameplates, faults, P&ID)
 - [x] Phase 3D — MCP server + client integration
 - [x] Phase 4 — Multi-agent orchestration with supervisor delegation
+- [x] Phase 5 — Migration to AWS: ECS Fargate, ECR, ALB, S3 persistence, GitHub Actions CI/CD via OIDC
 
 ---
 
@@ -464,12 +554,19 @@ a live observability dashboard, and
 CI/CD integration for regression 
 detection on every deployment.
 
+**Infrastructure next steps**, in priority order:
+1. Custom domain + ACM certificate for HTTPS
+2. Automate the ECS "force new deployment" step in the GitHub Actions workflow, so a push to `main` results in a fully live update with no manual console step
+3. Move the vector store hydration to build time rather than container startup — pre-baking a warmed image would remove the S3 download from the request-serving critical path entirely and further reduce cold-start time
+4. Enable ECS Container Insights / Action Logs for deeper scheduler-level observability
+5. Scope the deploy-time IAM role's managed policies down to a tighter custom policy, now that the exact permissions the pipeline needs are known from a working deployment
+
 ---
 
 ## Author
 
-**Victor Isuo** — Applied LLM Engineer
+**Victor Isuo** — Applied LLM Systems Engineer
 
-Building production-grade RAG and Agentic AI systems for industrial and enterprise use.
+Building production-grade RAG and Agentic AI systems for industrial and enterprise use, deployed on real cloud infrastructure — not just demo hosting.
 
-[GitHub](https://github.com/victor-isuo/industrial-ai-copilot) · [LinkedIn](https://linkedin.com/in/victor-isuo-a02b65171) · [Live Demo](https://victorisuo-industrial-ai-copilot.hf.space/multiagent-ui)
+[GitHub](https://github.com/victor-isuo/industrial-ai-copilot) · [LinkedIn](https://linkedin.com/in/victor-isuo-a02b65171) · [Live Demo](http://industrial-copilot-alb-998145074.us-east-1.elb.amazonaws.com/multiagent-ui)
