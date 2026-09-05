@@ -10,7 +10,7 @@ pinned: false
 # ⚙️ Industrial AI Copilot
 ### AI Fault Diagnosis System for Industrial Equipment
 
-A production-grade agentic AI platform built across four progressive phases —
+A production-oriented agentic AI platform built across four progressive phases —
 from hybrid document retrieval to autonomous multi-agent fault diagnosis.
 
 ## 🔴 Live Demo — Deployed on AWS (ECS Fargate)
