@@ -143,7 +143,7 @@ Custom evaluation framework across 30 hand-crafted test cases — built before a
 - Severity Classification (20%) — correct NORMAL/CAUTION/WARNING/CRITICAL for spec cases?
 - Pass threshold: ≥ 0.70
 
-RAGAS evaluates retrieval quality only. Our custom metrics cover the full agentic behaviour including tool selection and severity reasoning — which RAGAS cannot measure.
+Our evaluation focuses specifically on tool selection, engineering calculations, severity classification, and end-to-end agent behaviour rather than relying exclusively on standard RAG evaluation metrics.
 
 ### Failure Analysis
 
