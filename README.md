@@ -69,6 +69,7 @@ This system was migrated from Hugging Face Spaces to a containerized, production
 GitHub (main branch)
         ↓  push
 GitHub Actions — OIDC federation (no long-lived AWS credentials in CI)
+<<<<<<< HEAD
         ↓  docker build + push (tagged with commit SHA + latest)
 Amazon ECR — private image registry
         ↓  automated task definition update + service deploy
@@ -76,6 +77,13 @@ ECS Fargate Service (industrial-copilot-cluster)
         ↓  wait for steady state
 Automated Smoke Test — health polling + real query verification
         ↓  pipeline fails here if verification fails
+=======
+        ↓  docker build + push
+Amazon ECR — private image registry
+        ↓  force new deployment
+ECS Fargate Service (industrial-copilot-cluster)
+        ↓
+>>>>>>> dbdea49db127a599f1932803ef47ed21bc45fc49
 Application Load Balancer ──→ Internet
         ↓
 ECS Task (Fargate, 1 vCPU / 3GB)
@@ -89,7 +97,11 @@ ECS Task (Fargate, 1 vCPU / 3GB)
 
 ### CI/CD Pipeline
 
+<<<<<<< HEAD
 Every push to `main` triggers a fully automated build → deploy → verify pipeline via GitHub Actions:
+=======
+Every push to `main` triggers an automated build-and-push pipeline via GitHub Actions:
+>>>>>>> dbdea49db127a599f1932803ef47ed21bc45fc49
 
 ```yaml
 GitHub push → main
@@ -100,6 +112,7 @@ Assume AWS IAM role via OIDC (short-lived, auto-expiring credentials)
     ↓
 Authenticate to Amazon ECR
     ↓
+<<<<<<< HEAD
 Build Docker image → tag with commit SHA + latest → push to ECR
     ↓
 Fetch current ECS task definition → render new revision with updated image
@@ -111,10 +124,14 @@ Wait for ECS service to reach steady state (new task healthy, old task drained)
 Run automated smoke test against the live ALB endpoint
     ↓
 Pipeline passes only if the deployed application responds correctly
+=======
+Build Docker image → tag → push to ECR
+>>>>>>> dbdea49db127a599f1932803ef47ed21bc45fc49
 ```
 
 **Why OIDC over static access keys:** GitHub Actions authenticates to AWS by requesting a short-lived token and assuming a scoped IAM role — no AWS access keys are stored in GitHub at any point. The trust policy on the role restricts assumption to `repo:victor-isuo/industrial-ai-copilot:ref:refs/heads/main` specifically, so no other repository or branch can use this trust relationship. This eliminates the standard risk of long-lived credentials sitting in CI secrets.
 
+<<<<<<< HEAD
 **Why commit-SHA image tags, not just `latest`:** every deployed image is traceable to the exact commit that produced it — `docker images` on `latest` alone can't answer "what code is actually running in production right now," but a SHA tag can.
 
 **Fully automated deployment:** the ECS service update (previously a manual "Force new deployment" click in the console) is now part of the same workflow, via `aws-actions/amazon-ecs-render-task-definition` and `aws-actions/amazon-ecs-deploy-task-definition`. A push to `main` results in a live, verified update with zero manual console steps.
@@ -131,6 +148,9 @@ A pipeline that successfully builds an image, pushes it to ECR, and updates the 
 If either check fails, the smoke test exits non-zero, the GitHub Actions run fails, and the deployment is flagged as broken — automatically, before a person discovers it by visiting a dead demo link. This is the same principle behind the AgentEval evaluation infrastructure applied one layer down: don't trust that a deployment step *ran*, verify that it *worked*.
 
 This closed the last manual gap in the pipeline: previously, confirming a deployment actually worked meant opening the live URL and testing it by hand.
+=======
+Note: image push to ECR is currently automated; the ECS service redeploy (pulling the new image) is triggered manually via "Force new deployment." Automating this final step with the `amazon-ecs-deploy-task-definition` GitHub Action is a documented next step (see Limitations & Next Steps).
+>>>>>>> dbdea49db127a599f1932803ef47ed21bc45fc49
 
 ### S3-Backed Persistence — Why Not Bake Data Into the Image
 
@@ -449,8 +469,12 @@ Agent reasoning fully traced via LangSmith. Every tool call, latency, token usag
 | Container Registry | Amazon ECR |
 | Persistence | Amazon S3 (vector store + source documents) |
 | Secrets | AWS Secrets Manager |
+<<<<<<< HEAD
 | CI/CD | GitHub Actions — OIDC federation, automated build/deploy/verify pipeline |
 | Deployment Verification | Automated smoke test (health polling + live query validation) |
+=======
+| CI/CD | GitHub Actions, OIDC federation to AWS (no static credentials) |
+>>>>>>> dbdea49db127a599f1932803ef47ed21bc45fc49
 | IaC / Access Control | IAM least-privilege policies, scoped per service identity |
 
 ---
@@ -545,6 +569,10 @@ The full deployment is reproducible via:
 4. Upload `data/vectorstore` and `data/raw` as tarballs to an S3 bucket; the app hydrates both on startup via `src/core/s3_store.py`
 5. Configure GitHub Actions with OIDC federation to auto-build and push on every push to `main`
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> dbdea49db127a599f1932803ef47ed21bc45fc49
 ---
 
 ## Roadmap
@@ -557,7 +585,10 @@ The full deployment is reproducible via:
 - [x] Phase 3D — MCP server + client integration
 - [x] Phase 4 — Multi-agent orchestration with supervisor delegation
 - [x] Phase 5 — Migration to AWS: ECS Fargate, ECR, ALB, S3 persistence, GitHub Actions CI/CD via OIDC
+<<<<<<< HEAD
 - [x] Phase 6 — Fully automated ECS deployment + post-deploy smoke test verification (no manual console steps)
+=======
+>>>>>>> dbdea49db127a599f1932803ef47ed21bc45fc49
 
 ---
 
@@ -584,10 +615,17 @@ detection on every deployment.
 
 **Infrastructure next steps**, in priority order:
 1. Custom domain + ACM certificate for HTTPS
+<<<<<<< HEAD
 2. Move the vector store hydration to build time rather than container startup — pre-baking a warmed image would remove the S3 download from the request-serving critical path entirely and further reduce cold-start time
 3. Enable ECS Container Insights / Action Logs for deeper scheduler-level observability
 4. Scope the deploy-time IAM role's managed policies down to a tighter custom policy, now that the exact permissions the pipeline needs are known from a working deployment
 5. Expand the smoke test to cover the `/multiagent` endpoint and a retrieval-only `/query` case, not just the single-agent path
+=======
+2. Automate the ECS "force new deployment" step in the GitHub Actions workflow, so a push to `main` results in a fully live update with no manual console step
+3. Move the vector store hydration to build time rather than container startup — pre-baking a warmed image would remove the S3 download from the request-serving critical path entirely and further reduce cold-start time
+4. Enable ECS Container Insights / Action Logs for deeper scheduler-level observability
+5. Scope the deploy-time IAM role's managed policies down to a tighter custom policy, now that the exact permissions the pipeline needs are known from a working deployment
+>>>>>>> dbdea49db127a599f1932803ef47ed21bc45fc49
 
 ---
 
@@ -595,7 +633,13 @@ detection on every deployment.
 
 **Victor Isuo** — Applied LLM Systems Engineer
 
+<<<<<<< HEAD
 Building production-oriented RAG and Agentic AI systems for industrial and enterprise use, deployed on real cloud infrastructure — not just demo hosting.
 
 [GitHub](https://github.com/victor-isuo/industrial-ai-copilot) · [LinkedIn](https://linkedin.com/in/victor-isuo-a02b65171) · [Live Demo](http://industrial-copilot-alb-998145074.us-east-1.elb.amazonaws.com/multiagent-ui)
 
+=======
+Building production-grade RAG and Agentic AI systems for industrial and enterprise use, deployed on real cloud infrastructure — not just demo hosting.
+
+[GitHub](https://github.com/victor-isuo/industrial-ai-copilot) · [LinkedIn](https://linkedin.com/in/victor-isuo-a02b65171) · [Live Demo](http://industrial-copilot-alb-998145074.us-east-1.elb.amazonaws.com/multiagent-ui)
+>>>>>>> dbdea49db127a599f1932803ef47ed21bc45fc49
