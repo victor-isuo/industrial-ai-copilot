@@ -1,4 +1,4 @@
-name: Build and Push to ECR
+name: Build, Push, and Deploy to ECS
 
 on:
   push:
@@ -13,9 +13,13 @@ env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: victor-isuo/industrial-ai-copilot
   ECR_REGISTRY: 674963338816.dkr.ecr.us-east-1.amazonaws.com
+  ECS_CLUSTER: industrial-copilot-cluster
+  ECS_SERVICE: industrial-copilot-service
+  ECS_TASK_FAMILY: industrial-copilot-task
+  CONTAINER_NAME: industrial-copilot
 
 jobs:
-  build-and-push:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -33,9 +37,41 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build, tag, and push image to ECR
+        id: build-image
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+          IMAGE_TAG=${{ github.sha }}
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> "$GITHUB_OUTPUT"
 
+      - name: Download current task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition ${{ env.ECS_TASK_FAMILY }} \
+            --query taskDefinition \
+            > task-definition.json
 
+      - name: Render new task definition with updated image
+        id: render-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ${{ steps.build-image.outputs.image }}
+
+      - name: Deploy new task definition to ECS service
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render-task-def.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+
+      - name: Run post-deployment smoke test
+        run: |
+          pip install requests
+          python scripts/smoke_test.py
+
+    
 
