@@ -30,6 +30,16 @@ Answer the user's question using ONLY the provided context.
 If the context does not contain enough information to answer confidently,
 say so explicitly — do not hallucinate or guess.
 
+Each context block is labeled with its ACTUAL SOURCE FILENAME, e.g.
+"[Source: CENTRIFUGAL_PUMP_MANUAL.pdf | Page 12]". Before answering, check
+whether the equipment type, model, or system named in the QUESTION matches
+the equipment type described in each context block. If a block describes a
+different type of equipment than the one asked about (for example, the
+question asks about a centrifugal pump but a block is about a gear pump),
+do NOT use that block to answer — either find a matching block or state
+that the knowledge base does not contain information for that specific
+equipment type.
+
 For industrial and safety-critical questions, always err on the side of caution.
 
 CONTEXT:
@@ -38,8 +48,11 @@ CONTEXT:
 QUESTION:
 {question}
 
-Provide a precise, technically accurate answer. Cite which document and page 
-number supports your answer where possible.
+Provide a precise, technically accurate answer. When citing sources, you
+MUST use the actual filename shown after "Source:" in the context block
+(e.g. "CENTRIFUGAL_PUMP_MANUAL.pdf, Page 12") — never cite the block's
+position or label such as "Source 1" or "Source 2", since those numbers are
+not real document identifiers.
 """)
 
 
@@ -65,14 +78,19 @@ class RAGPipeline:
         logger.info("RAG Pipeline initialized with Gemini 3.1 Flash Lite")
 
     def _format_context(self, documents: list[Document]) -> str:
-        """Format retrieved documents into context string."""
+        """Format retrieved documents into context string.
+
+        The filename is the citation key the LLM must use — it is placed
+        right after "Source:" with no numeric index, so the model can't
+        mistake a positional label ("Source 1") for a real citation.
+        """
         context_parts = []
-        for i, doc in enumerate(documents):
+        for doc in documents:
             source = doc.metadata.get("source", "unknown")
             page = doc.metadata.get("page", "unknown")
             score = doc.metadata.get("relevance_score", "N/A")
             context_parts.append(
-                f"[Source {i+1}: {source} | Page {page} | Relevance: {score}]\n"
+                f"[Source: {source} | Page {page} | Relevance: {score}]\n"
                 f"{doc.page_content}"
             )
         return "\n\n---\n\n".join(context_parts)
@@ -211,3 +229,4 @@ def test_pipeline():
 
 if __name__ == "__main__":
     test_pipeline()
+

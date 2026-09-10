@@ -10,18 +10,21 @@ logger = logging.getLogger(__name__)
 
 class HybridRetriever:
     """Simple hybrid retriever combining vector and BM25 search."""
-    def __init__(self, vector_retriever, bm25_retriever, vector_weight=0.6, bm25_weight=0.4):
+    def __init__(self, vector_retriever, bm25_retriever, vector_weight=0.6, bm25_weight=0.4, max_results=10):
         self.vector_retriever = vector_retriever
         self.bm25_retriever = bm25_retriever
         self.vector_weight = vector_weight
         self.bm25_weight = bm25_weight
-    
+        self.max_results = max_results
+
     def get_relevant_documents(self, query: str) -> List[Document]:
         """Get relevant documents from both retrievers and deduplicate by source."""
         vector_docs = self.vector_retriever.invoke(query)
         bm25_docs = self.bm25_retriever.invoke(query)
-        
-        # Combine and deduplicate by content
+
+        # Combine and deduplicate by content.
+        # Vector results are listed first since they carry semantic relevance
+        # signal; BM25 results are appended as keyword-match supplements.
         seen = set()
         combined = []
         for doc in vector_docs + bm25_docs:
@@ -29,8 +32,10 @@ class HybridRetriever:
             if doc_id not in seen:
                 seen.add(doc_id)
                 combined.append(doc)
-        
-        return combined[:max(10, len(vector_docs))]  # Return up to 10 results
+
+        # Fixed cap — previously `max(10, len(vector_docs))` could exceed
+        # 10 and let unranked BM25 keyword hits ride along with no limit.
+        return combined[:self.max_results]
 
     def invoke(self, query: str) -> List[Document]:
         """Compatibility wrapper: allow calling `.invoke(query)` like other retrievers."""

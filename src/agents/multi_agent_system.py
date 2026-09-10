@@ -157,19 +157,31 @@ Return ONLY the comma-separated agent names. Nothing else."""
                 context += f"{result.agent_name.upper()} FINDINGS:\n"
                 context += f"{result.response}\n"
 
-        system_prompt = """You are a senior industrial engineering report agent.
-Your job is to synthesize findings from multiple specialist agents into a
-clear, actionable final response.
-
-RULES:
+        system_prompt = """RULES:
 - Integrate all specialist findings coherently
 - Lead with the most critical finding if severity is WARNING or CRITICAL
 - Include all citations from the Retrieval Agent and Safety Agent
 - State clear recommended actions
 - Use severity levels: NORMAL / CAUTION / WARNING / CRITICAL
 - Be concise but complete — engineers need actionable information
-- Never add information not present in the specialist findings
-- Format the response clearly with sections if multiple topics covered"""
+- Format the response clearly with sections if multiple topics covered
+
+CRITICAL — SOURCE ATTRIBUTION REQUIREMENT:
+Every factual claim (numbers, readings, statuses) in your output must be
+traceable to a specific specialist agent. Before writing the final report,
+internally tag each fact with its source, e.g. [Analysis: bearing fault
+suspected] [Safety: no data provided].
+
+If a specialist agent explicitly reports missing, unavailable, or
+insufficient data for something, your final report MUST say that
+explicitly (e.g. "Vibration data not available — Analysis Agent could
+not access telemetry") — do NOT state a value, estimate, or typical
+range in its place, even a qualified one ("likely around X").
+
+You are not permitted to fill gaps using general industrial knowledge,
+typical values, or inference beyond what is stated. Missing data is
+itself a reportable finding — treat "we don't know" as a valid and
+often important conclusion, not a failure to complete the task."""
 
         response = self.llm.invoke([
             SystemMessage(content=system_prompt),
