@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+from typing import Optional
 from contextlib import asynccontextmanager
 import logging
 import time
@@ -136,7 +137,7 @@ class QueryResponse(BaseModel):
 
 class AgentRequest(BaseModel):
     question: str
-    image_base64: str = None
+    image_base64: Optional[str] = None
     analysis_type: str = "general"
 
 class AgentResponse(BaseModel):
